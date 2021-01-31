@@ -109,7 +109,7 @@ _XINFREQ     = 5_000_000
    _Rect        =gc#BEL_RECT
 
 
-   ntoks        = 54   'Anzahl der Befehle
+   ntoks        = 55   'Anzahl der Befehle
 
 var
    long sp, tp, nextlineloc, rv, curlineno, pauseTime                         'Goto,Gosub-Zähler,Kommandozeile,Zeilenadresse,Random-Zahl,aktuelle Zeilennummer, Pausezeit
@@ -203,6 +203,7 @@ dat
    tok52 byte "COGS",0        'Cog-Anzeige                                                 '180 170
    tok53 byte "PING",0       'Plexbus-Ping                                                 '181
    tok54 byte "ASC",0        'Zeichen in ASCII Code umwandeln                               182
+   tok55 byte "REBOOT",0     'Hive Reboot                                                   183
 '******************************************************************************************************************
 
 '******************************************************************************************************************
@@ -213,7 +214,7 @@ dat
          word @tok24, @tok25, @tok26, @tok27, @tok28, @tok29, @tok30, @tok31
          word @tok32, @tok33, @tok34, @tok35, @tok36, @tok37, @tok38, @tok39
          word @tok40, @tok41, @tok42, @tok43, @tok44, @tok45, @tok46, @tok47
-         word @tok48, @tok49, @tok50, @tok51, @tok52, @tok53, @tok54
+         word @tok48, @tok49, @tok50, @tok51, @tok52, @tok53, @tok54, @tok55
 
 Dat '*************** Grafikparameter **************************
 
@@ -512,10 +513,13 @@ PRI getline(laenge):e | i,f, c , x,y,t,m,a                                      
                            return
 
                        211:h_dir(dzeilen,2,@ext5)                               'F4 DIR aufrufen
-                       210:                                                     'F3
+                       210:ios.print(string("PLEX-PING"))
+                           ios.printchar(13)
+                           ping
+                           return                                                     'F3
                        209:Getcogs                                              'F2 Cogs
                            return
-                       208:repeat a from 46 to 63                               'Funktionstastenbelegung F1
+                       208:repeat a from 46 to 57                               'Funktionstastenbelegung F1
                               errortext(a,0)
                               ios.printnl
                            return
@@ -557,6 +561,9 @@ pri Getcogs|a,b,r,t
     b:=ios.belgetcogs
     r:=ios.reggetcogs
     t:=0
+    ios.printchar(13)
+    ios.print(string("COG-Belegung:"))
+    ios.printchar(13)
     ios.printchar(13)
     ios.print(String("Administra "))
     CogShow(a)
@@ -1242,7 +1249,8 @@ PRI texec | ht, nt, restart,a,b,c,d,e,f,h,elsa,fvar,tab_typ
              181:'PING
                  ping
 
-
+             183:'Reboot
+                 ende
 '****************************ende neue befehle********************************
 
       else

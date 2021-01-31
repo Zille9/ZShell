@@ -1,4 +1,4 @@
-Syntax Error !
+Syntax !
 Wrong Linenumber !
 Wrong Parameter !
 Break in Line 
@@ -44,22 +44,17 @@ Invalid Stringlenght !
 Invalid Graphicmode !
 Out of Memory Error !
 F1	-Helplist
-F2	-LOAD
-F3	-SAVE
-F4	-DIR
-F5	-RUN
-F6	-LIST
-F7	-EDIT
-F8	-TRON
-F9	-TROFF
-F10	-RECLAIM
-F11	-load Systemfont
-F12	-BYE
-************************
-AltGr+F1-Mode 0
-AltGr+F2-Mode 1
-AltGr+F3-Mode 2
-AltGr+F4-Mode 3
-AltGr+F5-Mode 4
-63
+F2	-COGS
+F3	-PLEXBUS-PING
+F4	-DIRECTORY
+F5	-HUB-RAM-MONITOR
+F6	-E_RAM-MONITOR
+F7	-
+F8	-
+F9	-
+F10	-
+F11	-
+F12	-REBOOT
+
+
 
