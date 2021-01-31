@@ -1,0 +1,65 @@
+Syntax Error !
+Wrong Linenumber !
+Wrong Parameter !
+Break in Line 
+DATA Error ! 
+File-Read-Error !
+No Programm in Memory !
+File exist! Overwrite? y/n
+Bye !!!
+in Line:
+SD-Card 
+Recursion Error !
+Invalid Comparsion !
+Missing THEN !
+Invalid RETURN !
+Parameter out of Range !
+Missing Quote !
+Dimension Error !
+Invalid Variable !
+Missing Comma !
+Out of DATA Error !
+File-Open-Error !
+File-Delete-Error !
+File can't Rename !
+Function Error ! 
+Wrong Filename !
+Missing Parameter FOR !
+Missing TO !
+To many Parameters !
+File-Write-Error !
+End of Line in String !
+Invalid Hex-Character !
+Invalid Binary-Character !
+Invalid literal Value !
+Division by Zero Error !
+Missing Point !
+<Key? / ESC >
+File-Read-Error !
+Missing  Equal Sign !
+* Vers.3.50-01/2021 *
+Invalid Stringlenght !
+-Basic-Bytes-Free *
+ Datei(en)
+Invalid Graphicmode !
+Out of Memory Error !
+F1	-Helplist
+F2	-LOAD
+F3	-SAVE
+F4	-DIR
+F5	-RUN
+F6	-LIST
+F7	-EDIT
+F8	-TRON
+F9	-TROFF
+F10	-RECLAIM
+F11	-load Systemfont
+F12	-BYE
+************************
+AltGr+F1-Mode 0
+AltGr+F2-Mode 1
+AltGr+F3-Mode 2
+AltGr+F4-Mode 3
+AltGr+F5-Mode 4
+63
+
