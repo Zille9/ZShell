@@ -107,7 +107,7 @@ _XINFREQ     = 5_000_000
    _Line        =gc#BEL_DPL_LINE
    _Circ        =gc#BEL_DPL_CIRCLE
    _Rect        =gc#BEL_RECT
-
+   _Setx        =gc#BEL_DPL_SETX
 
    ntoks        = 55   'Anzahl der Befehle
 
@@ -136,11 +136,11 @@ var
    byte tmptime
 
 dat
-   tok0  byte "PRINT",0    ' PRINT                                                         '128 131    getestet
+   tok0  byte "?",0        ' PRINT                                                         '128 131    getestet
    tok1  byte "DUMP", 0    ' Speicher-Monitor <startadress>,<0..1> (0 Hram,1 Eram)          129 186    getestet
    tok2  byte "PEEK",0      'Byte aus Speicher lesen momentan nur eram                      130 215    getestet
    tok3  byte "POKE",0      'Byte in Speicher schreiben momentan nur eram                   131 208    getestet
-   tok4  byte "?",0         '? als Print-Ersatz                                             132 217    getestet
+   tok4  byte "INFO",0      'Systeminfo                                                     132 217    getestet
 
 '************************** Dateioperationen **************************************************************
    tok5  byte "OPEN", 0     ' OPEN " <file> ",<mode>                                        133 140    getestet
@@ -192,11 +192,11 @@ dat
    tok42 byte "SDATE",0    'Datum setzen                                                    170 199    getestet
    tok43 byte "GTIME",0    'Zeit   abfragen                                                 171 204    getestet
    tok44 byte "GDATE",0    'Datum abfragen                                                  172 205    getestet
-'**************************** Funktionen der seriellen Schnittstelle **********************************************
+'**************************** diverse Funktionen *******************************************************************
    tok45 byte "COM",0                                                                     ' 173 243 *  getestet
    tok46 byte "SID", 0       'SID_Soundbefehle                                              174 158    getestet
    tok47 byte "PLAY", 0      'SID DMP-Player                                               '175 159    getestet
-   tok48 byte "GDMP", 0      'SID DMP-Player-Position                                      '176 160    getestet
+   tok48 byte "BIN", 0       'scanne nach Bin-Dateien                                      '176 160    getestet
    tok49 byte "PORT",0       'Port-Funktionen      Port s,i,o,p                             177 207 *  getestet
    tok50 byte "JOY",0        'Joystick abfragen für 2 Joysticks                             178 183    getestet
    tok51 byte "XBUS",0      'Zugriff auf System-Funktionen                                  179 234    getestet
@@ -231,8 +231,8 @@ DAT
    adm           byte "adm.sys",0                                               'Administra-Treiber
    bel           byte "bel.sys",0
    errortxt      byte "errors.txt",0                                            'Error-Texte
-   importfile    byte "import.sys",0                                            'externe Funktion Import
-   exportfile    byte "export.sys",0                                            'externe Funktion Export
+'   importfile    byte "import.sys",0                                            'externe Funktion Import
+'   exportfile    byte "export.sys",0                                            'externe Funktion Export
    basicdir      byte "SHELL",0
 
    windowtile byte 135,137,136,7,141,134,132,130,128,8,129,133,0,131,8,8,8      'Fenster-Tiles für WIN-Funktion im Modus 0
@@ -592,6 +592,51 @@ pri CogShow(n)|t
          t++
          ios.printchar(15)
     ios.printchar(32)
+pri systeminfo|f,b
+    ios.print(string("System-Info !"))
+    ios.printnl
+    ios.print(string("Bellatrix :"))
+    ios.printbin(ios.belgetspec,16)
+    ios.printnl
+    ios.print(string("Version :"))
+    ios.printbin(ios.bel_get,8)
+    ios.printnl
+    ios.printnl
+    ios.print(string("Administra:"))
+    ios.printbin(ios.admgetspec,16)
+    ios.printnl
+    ios.print(string("Version :"))
+    ios.printbin(ios.admgetver,8)
+    ios.printnl
+    ios.printnl
+    getcogs
+    ios.printnl
+    ios.print(string("I2C-Belegung"))
+    ios.printnl
+    ping
+    ios.printnl
+    mount
+    ios.print(string("SD-Card-Info   :"))
+    ios.print(ios.sdvolname)
+    ios.printnl
+    ios.print(string("Speicher frei  :"))
+    f:=ios.sdcheckfree/1024
+    ios.printdec(f)
+    ios.set_func(21,_setx)
+    ios.print(string(" KBytes"))
+    ios.printnl
+    ios.print(string("Speicher belegt:"))
+    b:=ios.sdcheckused/1024
+    ios.printdec(b)
+    ios.set_func(21,_setx)
+    ios.print(string(" KBytes"))
+    ios.printnl
+    ios.print(string("Speicher gesamt:"))
+    ios.printdec(f+b)
+    ios.set_func(21,_setx)
+    ios.print(string(" KBytes"))
+    ios.printnl
+    mount
 
 con '****************************** Basic-Token erzeugen **************************************************************************************************************************
 PRI tokenize | tok, c, at, put, state, i, j
@@ -819,13 +864,13 @@ PRI factor | tok, a,b,c,d,e,g,f,fnum                                            
            return fl.ffloat(fl.FTrunc(klammer(0)))                                'Integerwert
 '****************************ende neue befehle********************************
 
-      152: ' RND <factor>
+{      152: ' RND <factor>
            a:=klammer(1)
            a*=1000
            b:=((rv? >>1)**(a<<1))
            b:=fl.ffloat(b)
            return fl.fmul(fl.fdiv(b,fl.ffloat(10000)),fl.ffloat(10))
-
+}
       "-":
           return fl.FNeg(factor)                                                 'negativwert ->factor, nicht expr(0) verwenden
 
@@ -1004,7 +1049,7 @@ PRI texec | ht, nt, restart,a,b,c,d,e,f,h,elsa,fvar,tab_typ
 
           case ht
 
-             128,132: ' PRINT
+             128: ' ? - PRINT
                 a := 0
                 repeat
                    nt := spaces
@@ -1046,7 +1091,8 @@ PRI texec | ht, nt, restart,a,b,c,d,e,f,h,elsa,fvar,tab_typ
                               ios.set_func(a+8,set_x)
                               tp++
 
-
+             132:'Info
+                  systeminfo
 
              133: ' OPEN " <file> ", R/W/A
                  Input_String
@@ -1460,7 +1506,7 @@ pri is_string |b,c                                                              
     tp:=b
 
     case c
-          quote,"$",144,163,176:result:=1
+          quote,"$",144,163:result:=1
 
 
 PRI komma

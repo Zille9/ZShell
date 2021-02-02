@@ -228,6 +228,7 @@ PUB main | zeichen,n,i,x,y ,speed                             'chip: kommandoint
 '       ----------------------------------------------  CHIP-MANAGMENT
        gc#BMGR_LOAD             : mgr_load                                                                                      'neuen bellatrix-code laden
        'gc#BMGR_FLASHLOAD        : flash_loader
+       gc#BMGR_GETSPEC          : mgr_getspec
        gc#BMGR_GETCOGS          : mgr_getcogs                                                                                   'freie cogs abfragen
        gc#BMGR_GETVER           : mgr_bel                                                                                       'Rückgabe Grafiktreiber 64
        gc#BMGR_REBOOT           : reboot                                                                                        'bellatrix neu starten
@@ -791,6 +792,8 @@ CON ''------------------------------------------------- CHIP-MANAGMENT-FUNKTIONE
 
 pub mgr_bel
     sub_putlong(Bel_Treiber_Ver)                                                                         'rückgabe 65 für tile-driver 64 farben stark geänderte Version
+PUB mgr_getspec                                         'cmgr: abfrage der spezifikation des chips
+  sub_putlong(CHIP_SPEC)
 
 PUB mgr_getcogs: cogs |i,c,cog[8]                                                                        'cmgr: abfragen wie viele cogs in benutzung sind
 ''funktionsgruppe               : cmgr
