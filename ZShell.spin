@@ -160,7 +160,7 @@ dat
 
 '************************** Dateioperationen **************************************************************
    tok5  byte "OPEN", 0     ' OPEN " <file> ",<mode>                                        133 140    getestet
-   tok6  byte "FREAD", 0    ' FREAD <var> {,<var>}                                          134 141    getestet
+   tok6  byte "TYPE", 0    ' TYPE <file> Dateiinhalt auf Bildschirm ausgeben                134 141    getestet
    tok7  byte "WRITE", 0    ' WRITE <"text"> :                                              135 142    getestet
    tok8  byte "CLOSE", 0    ' CLOSE                                                         136 143    getestet
    tok9  byte "DEL", 0      ' DELETE " <file> "                                             137 144    getestet
@@ -212,7 +212,7 @@ dat
    tok45 byte "COM",0                                                                     ' 173 243 *  getestet
    tok46 byte "SID", 0       'SID_Soundbefehle                                              174 158    getestet
    tok47 byte "PLAY", 0      'SID DMP-Player                                               '175 159    getestet
-   tok48 byte "SC", 0       'scanne nach Bin-Dateien                                      '176 160    getestet
+   tok48 byte "FLASH", 0     'Funktionen für Flash-Speicher                                '176 160    getestet
    tok49 byte "PORT",0       'Port-Funktionen      Port s,i,o,p                             177 207 *  getestet
    tok50 byte "JOY",0        'Joystick abfragen für 2 Joysticks                             178 183    getestet
    tok51 byte "XBUS",0       'Zugriff auf System-Funktionen                                 179 234    getestet
@@ -611,28 +611,6 @@ pri systeminfo|f,b
     mount
 
 con '****************************** Basic-Token erzeugen **************************************************************************************************************************
-{PRI tokenize | tok, c, at, put, state, i, j             'geändertes tokenize, es wird nur der erste Befehl ausgeführt
-   at := tp
-   put := tp
-   state := 0
-   repeat while c := byte[at]                                                   'solange Zeichen da sind schleife ausführen
-
-      if state == 0                                                             'keine Anführungszeichen mehr, also text untersuchen
-         repeat i from 0 to ntoks                                               'alle Kommandos abklappern
-            tok := @@toks[i] '@token'                                           'Kommandonamen einlesen
-            j := 0
-            repeat while byte[tok] and ((byte[tok] ^ byte[j+at]) & caseBit) == 0'zeichen werden in Grossbuchstaben konvertiert und verglichen solange 0 dann gleich
-               j++
-               tok++
-
-            if byte[tok] == 0 and not isvar(byte[j+at])                         'Kommando keine Variable?
-               byte[put++] := 128 + i                                           'dann wird der Token erzeugt
-               state:=1
-               at += j
-      else
-         byte[put++] := byte[at++]
-   byte[put] := 0                                                               'Zeile abschliessen
-}
 PRI tokenize | tok, c, at, put, state, i, j', ntoks
    at := tp
    put := tp
@@ -758,11 +736,6 @@ PRI factor | tok, a,b,c,d,e,g,f,fnum                                            
           komma
           b:=expr(1)                             '1-byte, 2-word, 4-long
           return fl.ffloat(lookup(b:ios.ram_rdbyte(a),ios.ram_rdword(a),0,ios.ram_rdlong(a)))
-
-
-
-      176:'gdmp playerposition
-           return fl.ffloat(ios.sid_dmppos)
 
 
       143: ' FILE
@@ -1012,10 +985,18 @@ PRI texec | ht, nt, restart,a,b,c,d,e,f,h,elsa,fvar,tab_typ
                          ":",0:ios.printchar(fReturn)
                                quit
 
-             171:ios.time                                              'Time-Ausgabe
-                     quit
-             172:ios.gdate
-                     quit
+             129:' Dump <adr>,ram-typ
+                 param(1)
+                 ios.dump(prm[0],$8000,prm[1])
+
+             131:'POKE                                                           Poke(adresse, wert, byte;word;long)
+                 param(2)
+                 if prm[2]==1
+                    ios.ram_wrbyte(prm[1],prm[0])
+                 elseif prm[2]==2
+                    ios.ram_wrword(prm[1],prm[0])
+                 else
+                    ios.ram_wrlong(prm[1],prm[0])
 
              132:'Info
                   systeminfo
@@ -1031,22 +1012,28 @@ PRI texec | ht, nt, restart,a,b,c,d,e,f,h,elsa,fvar,tab_typ
                     errortext
                  fileOpened := true
 
-             {134: 'FREAD <var> {, <var> }
-                 b:=Get_Input_Read(9)
-                 repeat                                                          'Zeile von SD-Karte in tline einlesen
-                      c := ios.sdgetc
-                      if c < 0
-                         errortext'6,1)                                          'Dateifehler
-                      elseif c == fReturn or c == ios.sdeof                      'Zeile oder Datei zu ende?
-                         tline[a] := 0                                           'tline-String mit Nullbyte abschliessen
-                         tp := @tline                                            'tline an tp übergeben
-                         quit
-                      elseif c == fLinefeed                                      'Linefeed ignorieren
-                         next
-                      elseif a < linelen-1                                       'Zeile kleiner als maximale Zeilenlänge?
-                         tline[a++] := c                                         'Zeichen in tline schreiben
-                 'Fill_Array(b,0)                                                 'Daten in die entsprechenden Arrays schreiben
-                 }
+             134:'Type
+                 Input_String
+                 mount
+                 if ios.sdopen(d,@f0)
+                    errortext
+                 b:=0
+                 repeat
+                     if c:=ios.sdeof
+                        close
+                        quit
+                     else
+                        c:=ios.sdgetc
+                        ios.printqchar(c)
+                        b++
+                     if b == 660
+                        ios.printnl
+                        ios.print(string("<CONTINUE? */esc:>"))
+                        if ios.keywait == 27
+                           ios.printnl
+                           quit
+                        b:=0
+
 
              {135: ' WRITE ...
                 b:=0                                                             'Marker zur Zeichenketten-Unterscheidung (String, Zahl)
@@ -1092,6 +1079,15 @@ PRI texec | ht, nt, restart,a,b,c,d,e,f,h,elsa,fvar,tab_typ
                     errortext                                                    'fehler wenn rename erfolglos
                 close
 
+             139:'CHDIR
+                 Input_String
+                 bytefill(@workdir,0,12)
+                 bytemove(@workdir,@f0,strsize(@f0))
+                 a:=mount
+                 close
+                 Pfadanzeige(a)
+                 bytefill(@workdir,0,12)
+
              140: 'DIR
                  Input_String
                  charactersUpperLower(@f0,0)                                 'in Großbuchstaben umwandeln
@@ -1099,33 +1095,39 @@ PRI texec | ht, nt, restart,a,b,c,d,e,f,h,elsa,fvar,tab_typ
                  ifnot b
                       h_dir(dzeilen,2,@ext5)                                 'directory ohne parameter nur anzeigen
 
+             141:'Aload
+                  Input_String
+                  bytemove(@f0[strsize(@f0)],string(".ADM"),4)
+                  'ios.print(@f0)
+                  mount
+                  if ios.sdopen("R",@f0)
+                     errortext
+                  ios.admload(@f0)
 
-             175:'PLAY
-                   'if is_string
-                   input_string
-                   mount
-                   if ios.sdopen("R",@f0)
-                      errortext
-                   play:=1
-                   ios.sid_sdmpplay(@f0)                                      'DMP-File abspielen
-                   if spaces == "0"
-                          playerstatus'ios.sid_dmpstop
-                          play:=0
-                          close
-                   elseif spaces == "1"
-                          ios. sid_dmppause
-             180:'COGS
-                  GetCogs
+             142:'BLOAD
+                  Input_String
+                  bytemove(@f0[strsize(@f0)],string(".BEL"),4)
+                  'ios.print(@f0)
+                  mount
+                  if ios.sdopen("R",@f0)
+                     errortext
+                  ios.belload(@f0)
 
+             145:'MKDIR
+                 input_string
+                 mount
+                 if ios.sdnewdir(@f0)
+                    errortext
+                 close
 
-             {143:
-              ' FILE = <expr>
-                 if spaces <> "="
-                    errortext'38,1)'@syn
-                 skipspaces
-                 if ios.sdputc(expr(1))
-                    errortext'30,1)                                              'Dateifehler
-                    }
+             147:'RLOAD
+                  Input_String
+                  'bytemove(@f0[strsize(@f0)],string(".BIN"),4)
+                  'ios.print(@f0)
+                  mount
+                  if ios.sdopen("R",@f0)
+                     errortext
+                  ios.ldbin(@f0)
 
              148:'MKFILE    Datei erzeugen
                  Input_String
@@ -1133,12 +1135,6 @@ PRI texec | ht, nt, restart,a,b,c,d,e,f,h,elsa,fvar,tab_typ
                  if ios.sdnewfile(@f0)
                     errortext
                  close
-
-             129:' Dump <adr>,ram-typ
-                 param(1)
-                 ios.dump(prm[0],$8000,prm[1])
-'******************************** neue Befehle ****************************
-
              165:'Colour <vordergr>,<hintergr>,<3.Color>(opt)
                  farbe:=expr(1)&255
                  komma
@@ -1146,12 +1142,8 @@ PRI texec | ht, nt, restart,a,b,c,d,e,f,h,elsa,fvar,tab_typ
                  ios.printboxcolor(win,farbe,hintergr)
                  ios.window(win,farbe,hintergr,farbe3,farbe3,farbe,hintergr,farbe3,white,0,0,29,39,7,0)
 
-
-
              166: 'CLS
                  ios.printchar(12)
-
-
 
              169:'stime
                 a:=expr(1)
@@ -1170,76 +1162,41 @@ PRI texec | ht, nt, restart,a,b,c,d,e,f,h,elsa,fvar,tab_typ
                  ios.setYear(prm[2])
                  ios.setDay(prm[3])
 
+             171:ios.time                                              'Time-Ausgabe
+                     quit
+             172:ios.gdate
+                     quit
+             173:'COM
+                 Comfunktionen
+             176:'Flash_Funktionen
 
-
-             145:'MKDIR
-                 input_string
-                 mount
-                 if ios.sdnewdir(@f0)
-                    errortext
-                 close
-
+             175:'PLAY
+                   'if is_string
+                   input_string
+                   mount
+                   if ios.sdopen("R",@f0)
+                      errortext
+                   play:=1
+                   ios.sid_sdmpplay(@f0)                                      'DMP-File abspielen
+                   if spaces == "0"
+                          playerstatus'ios.sid_dmpstop
+                          play:=0
+                          close
+                   elseif spaces == "1"
+                          ios. sid_dmppause
              177:'PORT
                  Port_Funktionen
-
-             131:'POKE                                                           Poke(adresse, wert, byte;word;long)
-                 param(2)
-                 if prm[2]==1
-                    ios.ram_wrbyte(prm[1],prm[0])
-                 elseif prm[2]==2
-                    ios.ram_wrword(prm[1],prm[0])
-                 else
-                    ios.ram_wrlong(prm[1],prm[0])
-             141:'Aload
-                  Input_String
-                  bytemove(@f0[strsize(@f0)],string(".ADM"),4)
-                  'ios.print(@f0)
-                  mount
-                  if ios.sdopen("R",@f0)
-                     errortext
-                  ios.admload(@f0)
-             142:'BLOAD
-                  Input_String
-                  bytemove(@f0[strsize(@f0)],string(".BEL"),4)
-                  'ios.print(@f0)
-                  mount
-                  if ios.sdopen("R",@f0)
-                     errortext
-                  ios.belload(@f0)
-
-             147:'RLOAD
-                  Input_String
-                  'bytemove(@f0[strsize(@f0)],string(".BIN"),4)
-                  'ios.print(@f0)
-                  mount
-                  if ios.sdopen("R",@f0)
-                     errortext
-                  ios.ldbin(@f0)
-
-
-             139:'CHDIR
-                 Input_String
-                 bytefill(@workdir,0,12)
-                 bytemove(@workdir,@f0,strsize(@f0))
-                 a:=mount
-                 close
-                 Pfadanzeige(a)
-                 bytefill(@workdir,0,12)
-
-
              179:'XBUS-Funktionen
                   BUS_Funktionen
 
-
-             173:'COM
-                 Comfunktionen
+             180:'COGS
+                  GetCogs
 
              181:'PING
                  ping
 
              183:'Reboot
                  ende
-'****************************ende neue befehle********************************
 
       else
           errortext
@@ -1717,7 +1674,7 @@ PRI LoadTiletoRam(datei)|adress ,count                       'tile:=tilenr,datei
 PRI loadtile|anzahl,adress                                             'tileset aus eram in bella laden
     Win_Set_Tiles
     adress:=TILE_RAM                                                            'naechster Tilebereich immer 2816 longs (11264 Bytes) 14 Tilesets moeglich
-    anzahl:=2816'ytiles[tileset]*xtiles[tileset]*16                                  'anzahl tilebloecke
+    anzahl:=2816                                                                'anzahl tilebloecke
     ios.loadtilebuffer(adress,anzahl)                                           'laden
 
 DAT
