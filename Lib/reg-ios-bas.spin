@@ -1168,6 +1168,22 @@ pub time|h,m,s
            printchar("0")
         printdec(s)
         tmptime:=s
+
+pub Gdate|d,m,y
+      d:=getdate
+      m:=getMonth
+      y:=getyear
+        if d<10
+           printchar("0")
+        printdec(d)
+        printchar(".")
+        if m<10
+           printchar("0")
+        printdec(m)
+        printchar(".")
+        printdec(y)
+
+
 'pub ReadClock
 '    bus_putchar1(gc#a_rtcReadClock)
 {

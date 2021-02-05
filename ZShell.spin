@@ -42,10 +42,17 @@ _XINFREQ     = 5_000_000
    quote     = 34                      ' Double quote
    caseBit   = !32                     ' Uppercase/Lowercase bit
    point     = 46                      ' point
+   Backslash = 92
+   percent   = 37
    STR_MAX   = linelen                 ' maximale Stringlänge für Printausgaben und Rom
 '*****************Speicherbereiche**********************************************
 
    ERROR_RAM = $0 '....$0FFF           ' ERROR-Texte
+   VERZ_NAME = $1000 '....$10FF        ' Verzeichnis-Tiefenspeicher
+   TILE_RAM  = $40000 '....$667FF      ' hier beginnt der Tile-Speicher fuer 14 Tiledateien(Modus0) oder 8 BMP-Bilder(Modus4)
+   SYS_FONT  = $66800 '....$693FF      ' ab hier liegt der System-Font 11kb
+   MOUSE_RAM = $69400 '....$6943F      ' User-Mouse-Pointer 64byte
+   WTILE_RAM= $7E500 '.... $7E9FF      ' Win-Tile Puffer hier können die Tiles, aus denen die Fenster gebaut werden geändert werden
 
    SMARK_RAM = $7FFF2                  ' Flag für übergebenen Startparameter Wert = 222
 
@@ -53,7 +60,7 @@ _XINFREQ     = 5_000_000
 
    ADM_SPEC       = gc#A_FAT|gc#A_LDR|gc#A_SID|gc#A_RTC|gc#A_PLX'%00000000_00000000_00000000_11110011
 
-'Farben im Mode1
+{'Farben im Mode1
 
 'Vordergrundfarben
   vschwarz=0
@@ -81,6 +88,15 @@ _XINFREQ     = 5_000_000
   #5, HLila
   #6, HGelb
   #7, HWeiss
+  }
+  #$FC, Light_Grey, #$A8, Grey, #$54, Dark_Grey
+  #$C0, Light_Red, #$80, Red, #$40, Dark_Red
+  #$30, Light_Green, #$20, Green, #$10, Dark_Green
+  #$1F, Light_Blue, #$09, Blue, #$04, Dark_Blue
+  #$F0, Light_Orange, #$E6, Orange, #$92, Dark_Orange
+  #$CC, Light_Purple, #$88, Purple, #$44, Dark_Purple
+  #$3C, Light_Teal, #$28, Teal, #$14, Dark_Teal
+  #$FF, White, #$00, Black
 
 '*****************Tastencodes*****************************************************
    ENTF_KEY  = 186
@@ -112,28 +128,28 @@ _XINFREQ     = 5_000_000
    ntoks        = 55   'Anzahl der Befehle
 
 var
-   long sp, tp, nextlineloc, rv, curlineno, pauseTime                         'Goto,Gosub-Zähler,Kommandozeile,Zeilenadresse,Random-Zahl,aktuelle Zeilennummer, Pausezeit
+   long tp                                                                    'Kommandozeile
    long prm[10]                                                               'Befehlszeilen-Parameter-Feld (hier werden die Parameter der einzelnen Befehle eingelesen)
    long usermarker,basicmarker                                                'Dir-Marker-Puffer für Datei-und Verzeichnis-Operationen
-   long tp_back                                                               'sicherheitskopie von tp ->für Input
 
    word filenumber                                                            'Anzahl der mit Dir gefundenen Dateien
+   byte xtiles[16]                                                            'xtiles fuer tilenr der Tile-Dateien       '
+   byte ytiles[16]                                                            'ytiles fuer tilenr der Tile-Dateien
 
-   byte prm_typ[10]                                                           'parametertyp variable oder string
    byte workdir[12]                                                           'aktuelles Verzeichnis
-   byte fileOpened,tline[linelen]',tline_back[linelen]                         'File-Open-Marker,Eingabezeilen-Puffer,Sicherheitskopie für tline ->Input-Befehl
-   'byte debug                                                                 'debugmodus Tron/Troff
+   byte Pfadname[255]
+   byte fileOpened,tline[linelen]                                             'File-Open-Marker,Eingabezeilen-Puffer,Sicherheitskopie für tline ->Input-Befehl
    byte cursor                                                                'cursor on/off
    byte win                                                                   'Fensternummer
-   byte farbe,hintergr                                                        'vorder,hintergrundfarbe
+   byte farbe,hintergr,farbe3                                                 'vorder,hintergrundfarbe,Rahmenfarbe
    byte file1[12],dzeilen,xz,yz,buff[8],modus                                 'Dir-Befehl-variablen   extension[12]
    byte volume,play                                                           'sidcog-variablen
-   byte str0[STR_MAX],strtmp[STR_MAX]                                         'String fuer Fontfunktion in Fenstern
+   byte str0[STR_MAX]                                                         'String fuer Fontfunktion in Fenstern
    byte font[STR_MAX]                                                         'Stringpuffer fuer Font-Funktion und str$-funktion
    byte f0[STR_MAX]                                                           'Hilfsstring
    byte ADDA,PORT                                                             'Puffer der Portadressen der Sepia-Karte
    byte returnmarker
-   byte tmptime
+   byte Pfadtiefe                                                             'nummer des wievielten unterpfades
 
 dat
    tok0  byte "?",0        ' PRINT                                                         '128 131    getestet
@@ -149,7 +165,7 @@ dat
    tok8  byte "CLOSE", 0    ' CLOSE                                                         136 143    getestet
    tok9  byte "DEL", 0      ' DELETE " <file> "                                             137 144    getestet
    tok10 byte "REN", 0      ' RENAME " <file> "," <file> "                                  138 145    getestet
-   tok11 byte "CDIR",0      ' Verzeichnis wechseln                                          139 230    getestet      kann nicht CD heissen, kollidiert sonst mit Hex-Zahlen-Auswertung in getanynumber
+   tok11 byte "CHDIR",0      ' Verzeichnis wechseln                                          139 230    getestet      kann nicht CD heissen, kollidiert sonst mit Hex-Zahlen-Auswertung in getanynumber
    tok12 byte "DIR", 0      ' dir anzeige                                                   140 146    getestet      NICHT AENDERN Funktionstaste!!
    tok13 byte "ALOAD", 0     'ALOAD "<file>"  Administra-Code laden                         141 147    getestet      NICHT AENDERN Funktionstaste!!
    tok14 byte "BLOAD", 0    ' BLOAD "<file>"  Bellatrix-Code laden                          142 148    getestet      NICHT AENDERN Funktionstaste!!
@@ -157,7 +173,7 @@ dat
    tok16 byte "GFILE",0     ' GETFILE rueckgabe der mit Dir gefundenen Dateien ,Dateinamen  144 152    getestet
    tok17 byte "MKDIR",0     ' Verzeichnis erstellen                                         145 206    getestet
    tok18 byte "GATTR",0     ' Dateiattribute auslesen                                       146 240    getestet
-   tok19 byte "RLOAD",0      'Bin Datei laden                                               147 218    getestet
+   tok19 byte "LOAD",0       'Regnatix Datei laden                                          147 218    getestet
    tok20 byte "MKFILE", 0    'Datei erzeugen                                                148 185    getestet
 
 '************************* logische Operatoren **********************************************************************
@@ -168,38 +184,38 @@ dat
    tok24 byte "RND", 0       'Zufallszahl von x                                            '152 139    getestet
    tok25 byte "PI",0         'Kreiszahl PI                                                 '153 174    getestet
    tok26 byte "CHR$",0       'CHR$                                                          154 211    getestet
-   tok27 byte "ABS",0                                               '                       155 245    getestet
+   tok27 byte "ABS",0        'Frei                                  '                       155 245    getestet
    tok28 byte "SIN",0                                                                     ' 156 246    getestet
    tok29 byte "COS",0                                                                     ' 157 247    getestet
    tok30 byte "TAN",0                                                                  '    158 248    getestet
    tok31 byte "ATN",0                                                                     ' 159 249    getestet
    tok32 byte "LN",0                                                                   '    160 250    getestet
-   tok33 byte "SGN",0                                                                   '   161 251    getestet
+   tok33 byte "SGN",0        'Frei                                                      '   161 251    getestet
    tok34 byte "SQR",0                                                                   '   162 252    getestet
    tok35 byte "EXP",0                                                                  '    163 253    getestet
-   tok36 byte "INT",0                                                                     ' 164 254    getestet
+   tok36 byte "INT",0        'Frei                                                        ' 164 254    getestet
 
 
 '************************* Bildschirmbefehle ***********************************************************************
-   tok37 byte "COLOR",0       'Farbe setzen  1,2 Vordergrund,Hintergrund                    165 187    getestet
+   tok37 byte "COLOUR",0       'Farbe setzen  1,2 Vordergrund,Hintergrund                    165 187    getestet
    tok38 byte "CLS",0       'Bildschirm loeschen cursor oberste Zeile Pos1                  166 188    getestet
    tok39 byte "HEX",0      'Ausgabe von Hexzahlen mit Print                               ' 167 235    getestet
-   tok40 byte "BIN",0       'Ausgabe von Binärzahlen mit Print                              168 201    getestet
+   tok40 byte "BNZ",0       'Ausgabe von Binärzahlen mit Print                              168 201    getestet
 
 
 '************************* Datum und Zeit funktionen ***************************************************************
    tok41 byte "STIME",0    'Stunde:Minute:Sekunde setzen ->                                 169 198    getestet
    tok42 byte "SDATE",0    'Datum setzen                                                    170 199    getestet
-   tok43 byte "GTIME",0    'Zeit   abfragen                                                 171 204    getestet
-   tok44 byte "GDATE",0    'Datum abfragen                                                  172 205    getestet
+   tok43 byte "TIME",0     'Zeit   abfragen                                                 171 204    getestet
+   tok44 byte "DATE",0     'Datum abfragen                                                  172 205    getestet
 '**************************** diverse Funktionen *******************************************************************
    tok45 byte "COM",0                                                                     ' 173 243 *  getestet
    tok46 byte "SID", 0       'SID_Soundbefehle                                              174 158    getestet
    tok47 byte "PLAY", 0      'SID DMP-Player                                               '175 159    getestet
-   tok48 byte "BIN", 0       'scanne nach Bin-Dateien                                      '176 160    getestet
+   tok48 byte "SC", 0       'scanne nach Bin-Dateien                                      '176 160    getestet
    tok49 byte "PORT",0       'Port-Funktionen      Port s,i,o,p                             177 207 *  getestet
    tok50 byte "JOY",0        'Joystick abfragen für 2 Joysticks                             178 183    getestet
-   tok51 byte "XBUS",0      'Zugriff auf System-Funktionen                                  179 234    getestet
+   tok51 byte "XBUS",0       'Zugriff auf System-Funktionen                                 179 234    getestet
    tok52 byte "COGS",0        'Cog-Anzeige                                                 '180 170
    tok53 byte "PING",0       'Plexbus-Ping                                                 '181
    tok54 byte "ASC",0        'Zeichen in ASCII Code umwandeln                               182
@@ -231,9 +247,10 @@ DAT
    adm           byte "adm.sys",0                                               'Administra-Treiber
    bel           byte "bel.sys",0
    errortxt      byte "errors.txt",0                                            'Error-Texte
-'   importfile    byte "import.sys",0                                            'externe Funktion Import
-'   exportfile    byte "export.sys",0                                            'externe Funktion Export
-   basicdir      byte "SHELL",0
+   shelldir      byte "SHELL",0
+   sysfont       byte "sysfontb.dat",0                                          'system-font
+
+   ZShell        byte "ZSHELL for Hive",0
 
    windowtile byte 135,137,136,7,141,134,132,130,128,8,129,133,0,131,8,8,8      'Fenster-Tiles für WIN-Funktion im Modus 0
 
@@ -243,19 +260,18 @@ PUB main | sa
    init                                                                         'Startinitialisierung
 
    sa := 0                                                                      'startparameter
-   curlineno := -1                                                              'startparameter
 
    repeat
       \doline(sa)                                                               'eine kommandozeile verarbeiten
       sa  := 0                                                                  'Zeile verwerfen da abgearbeitet
 
 con'****************************************** Initialisierung *********************************************************************************************************************
-PRI init |pmark,newmark,x,y,i
+PRI init |pmark,newmark,x,y,i,f
 
   ios.start
   ios.sdmount                                                                   'SD-Karte Mounten
   activate_dirmarker(0)                                                         'in's Rootverzeichnis
-  ios.sdchdir(@basicdir)                                                        'in's Basicverzeichnis wechseln
+  ios.sdchdir(@shelldir)                                                        'in's Basicverzeichnis wechseln
   basicmarker:= get_dirmarker                                                   'usermarker von administra holen
   usermarker:=basicmarker
 
@@ -263,56 +279,38 @@ PRI init |pmark,newmark,x,y,i
   FL.Start
 '**************************************************************************************************************************************************************
 '*********************************** Startparameter ***********************************************************************************************************
-  pauseTime := 0                                                                'pause wert auf 0
+'  pauseTime := 0                                                                'pause wert auf 0
   fileOpened := 0                                                               'keine datei geoeffnet
   volume:=15                                                                    'sid-cog auf volle lautstaerke
-  farbe:=vtuerkis                                                                  'Schreibfarbe
-  hintergr:=hblau                                                               'Hintergrundfarbe
+  farbe:=green                                                                 'Schreibfarbe
+  hintergr:=black                                                              'Hintergrundfarbe
+  farbe3:=Dark_Teal                                                             '3.Farbe
 '***************************************************************************************************************************************************************
 
 '**************************************************************************************************************************************************************
 
-     ios.ram_fill(ERROR_RAM,$BF0,0)                                                'Errortext-Speicher loeschen
+     ios.ram_fill(VERZ_NAME,$FF,0)                                                'Errortext-Speicher loeschen
 
-     mount
-     ios.sdopen("R",@errortxt)
-     fileload(ERROR_RAM)                                                           'Error-Text einlesen
      usermarker:=0
+     pfadtiefe:=0                                                                   'wir beginnen im Root-Pfad
+
      mount
 '************************** Startbildschirm ***********************************************************************************************************************************
-     win:=0                                                                           'aktuelle fensternummer 0 ist das Hauptfenster
+     win:=1                                                                           'aktuelle fensternummer 1 ist das Hauptfenster
 
   '*************** Bildschirmaufbau ***********************************
+     LoadTiletoRam(@sysfont)                                              'Logo und Font in eram laden
 
+     loadtile                                                             'Logo und Font in den Puffer laden
+     ios.window(win,farbe,hintergr,farbe3,farbe3,farbe,hintergr,farbe3,hintergr,0,0,29,39,7,0)
      ios.set_func(win,Print_Window)
 
      ios.printchar(12)                                                             'cls
-     ios.printboxcolor(win,farbe,hintergr)
-     ios.printchar(12)
+     ios.Set_Titel_Status(win,1,@zshell)
+     ios.Set_Titel_Status(win,2,string("\"))
+
  '*************** Logo anzeigen **************************************
      x:=y:=0
-     ios.setpos(0,0)
-     ios.printboxcolor(win,vschwarz,hrot)
-     ios.print(string("       "))
-     ios.printboxcolor(win,farbe,hintergr)
-     ios.print(string("   DOS for Hive-Computer"))
-     ios.setpos(1,0)
-     ios.printboxcolor(win,vschwarz,hGelb)
-     ios.print(string("      "))
-     ios.printboxcolor(win,farbe,hintergr)
-     ios.print(string("      by Zille9 01/2021"))
-     ios.setpos(2,0)
-     ios.printboxcolor(win,vschwarz,hgruen)
-     ios.print(string("     "))
-     ios.printboxcolor(win,farbe,hintergr)
-
-     ios.print(string("         Version "))
-     ios.print(zahlenformat(version))
-     ios.printchar(13)
-     ios.printboxcolor(win,farbe,hlila)
-     ios.print(string("    "))
-     ios.printboxcolor(win,farbe,hintergr)
-
      cursor:=3                                                                        'cursormarker für Cursor on
      ios.set_func(cursor,Cursor_Set)
 
@@ -326,8 +324,6 @@ PRI init |pmark,newmark,x,y,i
   yz     :=4
   modus  :=2                                                                       'Modus1=compact, 2=lang 0=unsichtbar
    '*****************************************************************************************************************************************************
-  ios.printchar(13)
-  ios.printchar(13)
 
   ADDA:=$48                                                                        'Portadressen und AD-Adresse für Sepia-Karte vorbelegen
   PORT:=$38
@@ -345,7 +341,7 @@ PRI ifexist(dateiname)                                                          
    mount
 
    if ios.sdopen("W",dateiname)==0                                              'existiert die dateischon?
-      errortext(8,0)                                                            '"File exist! Overwrite? y/n"    'fragen, ob ueberschreiben
+      ios.print(string("File exist! Overwrite? y/n"))                           '"File exist! Overwrite? y/n"    'fragen, ob ueberschreiben
       if ios.keywait=="y"
          if ios.sddel(dateiname)                                                'wenn ja, alte Datei loeschen, bei nein ueberspringen
             close
@@ -367,7 +363,7 @@ PRI close
    ios.sdclose
    ios.sdunmount
 
-PRI mount
+PRI mount|i
      playerstatus
      ios.sdmount
      activate_dirmarker(usermarker)
@@ -375,45 +371,23 @@ PRI mount
         if strcomp(@workdir,string("\"))                                        'ins Root-Verzeichnis
            activate_dirmarker(0)
         else
-           ios.sdchdir(@workdir)
+           i:=ios.sdchdir(@workdir)
+           if i
+              sysbeep
+              ios.print(string("Error!"))
+              return i
         usermarker:=get_dirmarker
+        return 0
 
 con '********************************** Fehler-und System-Texte in den eRam laden ****************************************************************************************************************
-PRI fileload(adr): cont
-    cont:=ios.sdfattrib(0)                                                      'Anzahl der in der Datei existierenden Zeichen
-    ios.sdxgetblk(adr,cont)
-    close
-
-PRI errortext(nummer,ton)|ad                                                    'Fehlertext anzeigen
-    ad:=ERROR_RAM
-    ram_txt(nummer,ad)
-    if ton<2                                                                    'alle fehlertexte mit 0 und 1
-       ios.print(@font)                                                         'fehlertext
-    if ton==1                                                                   'mit system-beep bei Ton==0 wird nur der Text ausgegeben und kein Beep erzeugt (bei Systemtexten)
-       sysbeep
-       if curlineno>0                                                           'Ausgabe der Zeilennummer bei Programmmodus (im Kommandomodus wird keine Zeilennummer ausgegeben)
-          errortext(10,0)
-          ios.printdec(curlineno)
-       ios.printchar(13)
-       'Prg_End_Pos
-       close
-       abort
-    clearstr                                                                    'Stringpuffer löschen
-
+pri errortext
+    sysbeep
+    ios.print(string("Error !"))
+    abort
 
 PRI sysbeep
     ios.sid_dmpstop
     ios.sid_beep(0)
-
-PRI ram_txt(nummer,ad)|c,i
-    i:=0
-    repeat nummer
-         repeat while (c:=ios.ram_rdbyte(ad++))<>10
-                if nummer==1 and c>13
-                    byte[@font][i++]:=c
-         nummer--
-    byte[@font][i]:=0
-
 
 con '************************************* Basic beenden **************************************************************************************************************************
 PRI ende
@@ -423,9 +397,7 @@ PRI ende
 
 con'**************************************** Basic-Zeile aus dem Speicher lesen und zur Abarbeitung uebergeben ********************************************************************
 PRI doline(s) | c,i,xm
-   'curlineno := -1                                                        'erste Zeile
    i:=0
-   'ios.printchar(13)
    returnmarker:=0
    ios.print(string(">"))                                               'Promt ausgeben
 
@@ -519,10 +491,10 @@ PRI getline(laenge):e | i,f, c , x,y,t,m,a                                      
                            return                                                     'F3
                        209:Getcogs                                              'F2 Cogs
                            return
-                       208:repeat a from 46 to 57                               'Funktionstastenbelegung F1
-                              errortext(a,0)
-                              ios.printnl
-                           return
+                       208:'repeat a from 46 to 57                               'Funktionstastenbelegung F1
+                           '   errortext'(a,0)
+                           '   ios.printnl
+                           'return
 '**********************************************************************
                        13:Returnmarker:=1                                       'wenn return gedrueckt
                            ios.printnl
@@ -567,17 +539,17 @@ pri Getcogs|a,b,r,t
     ios.printchar(13)
     ios.print(String("Administra "))
     CogShow(a)
-    ios.printboxcolor(0,farbe,hintergr)
+    ios.printboxcolor(win,farbe,hintergr)
     ios.printdec(a)
     ios.printchar(13)
     ios.print(String("Bellatrix  "))
     CogShow(b)
-    ios.printboxcolor(0,farbe,hintergr)
+    ios.printboxcolor(win,farbe,hintergr)
     ios.printdec(b)
     ios.printchar(13)
     ios.print(String("Regnatix   "))
     CogShow(r)
-    ios.printboxcolor(0,farbe,hintergr)
+    ios.printboxcolor(win,farbe,hintergr)
     ios.printdec(r)
     ios.printchar(13)
 
@@ -586,9 +558,9 @@ pri CogShow(n)|t
     repeat 8
 
          if t<n
-            ios.printboxcolor(0,vgruen,hintergr)
+            ios.printboxcolor(win,green,hintergr)
          else
-            ios.printboxcolor(0,vrot,hintergr)
+            ios.printboxcolor(win,red,hintergr)
          t++
          ios.printchar(15)
     ios.printchar(32)
@@ -598,14 +570,14 @@ pri systeminfo|f,b
     ios.print(string("Bellatrix :"))
     ios.printbin(ios.belgetspec,16)
     ios.printnl
-    ios.print(string("Version :"))
+    ios.print(string("Version   :"))
     ios.printbin(ios.bel_get,8)
     ios.printnl
     ios.printnl
     ios.print(string("Administra:"))
     ios.printbin(ios.admgetspec,16)
     ios.printnl
-    ios.print(string("Version :"))
+    ios.print(string("Version   :"))
     ios.printbin(ios.admgetver,8)
     ios.printnl
     ios.printnl
@@ -639,19 +611,36 @@ pri systeminfo|f,b
     mount
 
 con '****************************** Basic-Token erzeugen **************************************************************************************************************************
-PRI tokenize | tok, c, at, put, state, i, j
+{PRI tokenize | tok, c, at, put, state, i, j             'geändertes tokenize, es wird nur der erste Befehl ausgeführt
    at := tp
    put := tp
    state := 0
    repeat while c := byte[at]                                                   'solange Zeichen da sind schleife ausführen
-      if c == quote                                                             'text in Anführungszeichen wird ignoriert
-         if state == "Q"                                                        'zweites Anführungszeichen also weiter
-            state := 0
-         elseif state == 0
-            state := "Q"                                                        'erstes Anführungszeichen
 
       if state == 0                                                             'keine Anführungszeichen mehr, also text untersuchen
          repeat i from 0 to ntoks                                               'alle Kommandos abklappern
+            tok := @@toks[i] '@token'                                           'Kommandonamen einlesen
+            j := 0
+            repeat while byte[tok] and ((byte[tok] ^ byte[j+at]) & caseBit) == 0'zeichen werden in Grossbuchstaben konvertiert und verglichen solange 0 dann gleich
+               j++
+               tok++
+
+            if byte[tok] == 0 and not isvar(byte[j+at])                         'Kommando keine Variable?
+               byte[put++] := 128 + i                                           'dann wird der Token erzeugt
+               state:=1
+               at += j
+      else
+         byte[put++] := byte[at++]
+   byte[put] := 0                                                               'Zeile abschliessen
+}
+PRI tokenize | tok, c, at, put, state, i, j', ntoks
+   at := tp
+   put := tp
+   state := 0
+   repeat while c := byte[at]                                                   'solange Zeichen da sind schleife ausführen
+
+      if state == 0                                                             'keine Anführungszeichen mehr, also text untersuchen
+         repeat i from 0 to ntoks'ntoks-1                                         'alle Kommandos abklappern
             tok := @@toks[i] '@token'                                           'Kommandonamen einlesen
             j := 0
             repeat while byte[tok] and ((byte[tok] ^ byte[j+at]) & caseBit) == 0'zeichen werden in Grossbuchstaben konvertiert und verglichen solange 0 dann gleich
@@ -676,16 +665,27 @@ PRI tokenize | tok, c, at, put, state, i, j
          byte[put++] := byte[at++]
    byte[put] := 0                                                               'Zeile abschliessen
 
-
 obj '******************************************STRINGS*****************************************************************************************************************************
 con '************************************* Stringverarbeitung *********************************************************************************************************************
+con '*************************************** Dateinamen extrahieren **************************************************************************************************************
+PRI scanFilename(f,kennung):chars| c
+
+   chars := 0
+   repeat while (c := byte[tp++])<>kennung
+      if chars++ < STR_MAX                                                      'Wert stringlänge ist wegen Stringfunktionen
+           if c>96
+              c^=32
+         byte[f++] := c
+   byte[f] := 0
+
 PRI getstr:a|nt,b,str ,f                                                          'string in Anführungszeichen oder Array-String einlesen
     a:=0
     nt:=spaces
     bytefill(@font,0,STR_MAX)
     case nt
-         quote:
-              scanfilename(@font,0,quote)                                       'Zeichenkette in Anführungszeichen
+         33..122:
+              scanfilename(@font,0)                                       'Zeichenkette in Anführungszeichen
+
          154: skipspaces                                                        'Chr$-Funktion
               a:=klammer(1)
               byte[@font][0]:=a
@@ -696,31 +696,7 @@ PRI getstr:a|nt,b,str ,f                                                        
 Pri Input_String
        getstr
        bytemove(@f0,@font,strsize(@font))                                       'string nach f0 kopieren
-
-pri Get_Input_Read(anz):b |nt,c,tb,ad                                                   'Eingabe von gemischten Arrays für INPUT und FREAD
-
-                b:=0
-                nt:=spaces
-                c:=0
-                bytefill(@prm_typ,0,10)
-
-             repeat
-                  '***************** Zahlen ***************************************
-                  if isvar(nt)
-                     skipspaces
-                     prm_typ[b++]:=c
-                     c:=0
-                     if spaces==","
-                        nt:=skipspaces
-                     else
-                        quit
-                     if anz==b
-                        quit
-                  '************************
-                  else
-                     errortext(19,1)
-
-
+       'ios.print(@f0)
 PRI clearstr
     bytefill(@font,0,STR_MAX)
     bytefill(@str0,0,STR_MAX)
@@ -773,7 +749,7 @@ PRI factor | tok, a,b,c,d,e,g,f,fnum                                            
       "(":
          a := expr(0)
          if spaces <> ")"
-            errortext(1,1)
+            errortext
          tp++
          return a
 
@@ -783,9 +759,6 @@ PRI factor | tok, a,b,c,d,e,g,f,fnum                                            
           b:=expr(1)                             '1-byte, 2-word, 4-long
           return fl.ffloat(lookup(b:ios.ram_rdbyte(a),ios.ram_rdword(a),0,ios.ram_rdlong(a)))
 
-      144:'GFile                                                                'Ausgabe Anzahl, mit Dir-Filter gefundener Dateieintraege
-          ifnot spaces
-                return fl.ffloat(filenumber)
 
 
       176:'gdmp playerposition
@@ -800,23 +773,9 @@ PRI factor | tok, a,b,c,d,e,g,f,fnum                                            
           return fl.ffloat(ios.Joy(3+a))
 
 
-      171:'gtime
-          a:=klammer(1)
-          return fl.ffloat(lookup(a:ios.getHours,ios.getMinutes,ios.getSeconds))
-
-      172:'gdate
-          a:=klammer(1)
-          return fl.ffloat(lookup(a:ios.getDate,ios.getMonth,ios.getYear,ios.getday))
-
-      177: 'Port
-          return fl.ffloat(Port_Funktionen)
-
       182:'asc
            klammerauf
-           b:=spaces
-           if b==quote
-              c:=fl.ffloat(skipspaces) 'Zeichen
-              skipspaces                     'Quote überspringen
+              c:=fl.ffloat(spaces) 'Zeichen
               skipspaces
            klammerzu
            return c
@@ -833,8 +792,6 @@ PRI factor | tok, a,b,c,d,e,g,f,fnum                                            
       173:'COM
            return Comfunktionen
 
-      155:'ABS
-           return fl.fabs(klammer(0))
       156:'sin
            return fl.sin(klammer(0))
       157:'cos
@@ -845,45 +802,27 @@ PRI factor | tok, a,b,c,d,e,g,f,fnum                                            
            return fl.ATAN(klammer(0))
       160:'LN
            return fl.LOG(klammer(0))
-      161:'SGN
-           a:=klammer(0)                                                       'SGN-Funktion +
-            if a>0
-               a:=1
-            elseif a==0
-                   a:=0
-            elseif a<0
-                   a:=-1
-            a:=fl.ffloat(a)
-           return a
+
       162:'SQR
            return fl.fsqr(klammer(0))
       163:'EXP
            return fl.exp(klammer(0))
 
-      164:'INT
-           return fl.ffloat(fl.FTrunc(klammer(0)))                                'Integerwert
 '****************************ende neue befehle********************************
 
-{      152: ' RND <factor>
-           a:=klammer(1)
-           a*=1000
-           b:=((rv? >>1)**(a<<1))
-           b:=fl.ffloat(b)
-           return fl.fmul(fl.fdiv(b,fl.ffloat(10000)),fl.ffloat(10))
-}
       "-":
           return fl.FNeg(factor)                                                 'negativwert ->factor, nicht expr(0) verwenden
 
       153:'Pi
           return pi
 
-      "#","%", quote,"0".."9":
+      "%","#","0".."9":
          --tp
          return getAnyNumber
 
 
       other:
-           errortext(1,1)
+           errortext
 
 
 Con '******************************************* Operatoren *********************************************************************************************************************
@@ -914,7 +853,7 @@ PRI term | tok, t,a
            if a<>0
               t  :=fl.FDIV(t,a)                                                 'Division
            else
-              errortext(35,1)
+              errortext
      else
         return t
 
@@ -982,7 +921,7 @@ PRI compare | op,a,c,left,right,oder
       66:return fl.ffloat(fl.ftrunc(a)>> fl.fTrunc(arithExpr))'shift right
       67:return fl.ffloat(fl.ftrunc(a)>< fl.fTrunc(arithExpr))'reverse
       129:return fl.ffloat(fl.ftrunc(a)<< fl.fTrunc(arithExpr))'shift left
-      other:errortext(13,1)
+      other:errortext
 
 
 PRI logicNot | tok
@@ -1015,19 +954,6 @@ PRI expr(mode) | tok, t
          return t
 
 
-con '*************************************** Dateinamen extrahieren **************************************************************************************************************
-PRI scanFilename(f,mode,kennung):chars| c
-
-   chars := 0
-   if kennung==quote
-      tp++                                                                      'überspringe erstes Anführungszeichen
-   repeat while (c := byte[tp++]) <> kennung
-      if chars++ < STR_MAX                                                      'Wert stringlänge ist wegen Stringfunktionen
-         if mode==1                                                             'im Modus 1 werden die Buchstaben in Grossbuchstanben umgewandelt
-            if c>96
-               c^=32
-         byte[f++] := c
-   byte[f] := 0
 
 con '***************************************** Befehlsabarbeitung ****************************************************************************************************************
 PRI texec | ht, nt, restart,a,b,c,d,e,f,h,elsa,fvar,tab_typ
@@ -1055,34 +981,27 @@ PRI texec | ht, nt, restart,a,b,c,d,e,f,h,elsa,fvar,tab_typ
                    nt := spaces
                    if nt ==0 or nt==":"
                       quit
+
                    case nt
-
-                       154,179,quote:stringfunc(0,0) 'Strings
-                       171:ios.time                                              'Time-Ausgabe
-                           quit
-                       184:skipspaces                                            'TAB
-                           a:=klammer(1)
-                           ios.set_func(a,set_x)
-
-                       167,168:skipspaces
-                               a:=klammer(1)
-                               d:=a
-                               c:=1                                              'Hex-Ausgabe Standard 1 Stelle
-                               e:=4                                              'Bin-Ausgabe Standard 4 Stellen
-                               repeat while (b:=d/16)>0                          'Anzahl Stellen für Ausgabe berechnen
-                                     c++
-                                     e+=4
-                                     d:=b
-                               if nt==167
-                                  ios.printhex(a,c)                              'Hex
-                               if nt==168
-                                  ios.printbin(a,e)                              'Bin
-
-                       other:a:=tp
-                             skipspaces
-                             skipspaces
-                             tp:=a
-                             ios.print(zahlenformat(expr(0)))
+                        154,179:stringfunc(0,0) 'Strings
+                        167,168:skipspaces
+                                a:=klammer(1)
+                                d:=a
+                                c:=1                                              'Hex-Ausgabe Standard 1 Stelle
+                                e:=4                                              'Bin-Ausgabe Standard 4 Stellen
+                                repeat while (b:=d/16)>0                          'Anzahl Stellen für Ausgabe berechnen
+                                        c++
+                                        e+=4
+                                        d:=b
+                                if nt==167
+                                   ios.printhex(a,c)                              'Hex
+                                if nt==168
+                                   ios.printbin(a,e)                              'Bin
+                        other:a:=tp
+                              b:=spaces
+                              skipspaces
+                              tp:=a
+                              ios.print(zahlenformat(expr(0)))
 
                    nt := spaces
                    case nt
@@ -1090,6 +1009,13 @@ PRI texec | ht, nt, restart,a,b,c,d,e,f,h,elsa,fvar,tab_typ
                          ",": a:=ios.getx
                               ios.set_func(a+8,set_x)
                               tp++
+                         ":",0:ios.printchar(fReturn)
+                               quit
+
+             171:ios.time                                              'Time-Ausgabe
+                     quit
+             172:ios.gdate
+                     quit
 
              132:'Info
                   systeminfo
@@ -1097,20 +1023,20 @@ PRI texec | ht, nt, restart,a,b,c,d,e,f,h,elsa,fvar,tab_typ
              133: ' OPEN " <file> ", R/W/A
                  Input_String
                  if spaces <> ","
-                    Errortext(20,1)'@syn
+                    errortext
                  d:=skipspaces
                  tp++
                  mount
                  if ios.sdopen(d,@f0)
-                    errortext(22,1)
+                    errortext
                  fileOpened := true
 
-             134: 'FREAD <var> {, <var> }
+             {134: 'FREAD <var> {, <var> }
                  b:=Get_Input_Read(9)
                  repeat                                                          'Zeile von SD-Karte in tline einlesen
                       c := ios.sdgetc
                       if c < 0
-                         errortext(6,1)                                          'Dateifehler
+                         errortext'6,1)                                          'Dateifehler
                       elseif c == fReturn or c == ios.sdeof                      'Zeile oder Datei zu ende?
                          tline[a] := 0                                           'tline-String mit Nullbyte abschliessen
                          tp := @tline                                            'tline an tp übergeben
@@ -1120,8 +1046,9 @@ PRI texec | ht, nt, restart,a,b,c,d,e,f,h,elsa,fvar,tab_typ
                       elseif a < linelen-1                                       'Zeile kleiner als maximale Zeilenlänge?
                          tline[a++] := c                                         'Zeichen in tline schreiben
                  'Fill_Array(b,0)                                                 'Daten in die entsprechenden Arrays schreiben
+                 }
 
-             135: ' WRITE ...
+             {135: ' WRITE ...
                 b:=0                                                             'Marker zur Zeichenketten-Unterscheidung (String, Zahl)
                 repeat
                    nt := spaces                                                  'Zeichen lesen
@@ -1141,7 +1068,8 @@ PRI texec | ht, nt, restart,a,b,c,d,e,f,h,elsa,fvar,tab_typ
                         0,":":ios.sdputc(fReturn)                                'ende der Zeile wird mit Doppelpunkt oder kein weiteres Zeichen markiert
                               ios.sdputc(fLinefeed)
                               quit
-                        other:errortext(1,1)
+                        other:errortext'1,1)
+                        }
 
              136: ' CLOSE
                 fileOpened := false
@@ -1151,7 +1079,7 @@ PRI texec | ht, nt, restart,a,b,c,d,e,f,h,elsa,fvar,tab_typ
                 Input_String
                 mount
                 if ios.sddel(@f0)
-                   errortext(23,1)
+                   errortext
                 close
 
              138: ' REN " <file> "," <file> "
@@ -1161,28 +1089,26 @@ PRI texec | ht, nt, restart,a,b,c,d,e,f,h,elsa,fvar,tab_typ
                 Input_String
                 mount
                 if ios.sdrename(@file1,@f0)                                      'rename durchfuehren
-                    errortext(24,1)                                              'fehler wenn rename erfolglos
+                    errortext                                                    'fehler wenn rename erfolglos
                 close
 
-             140: ' DIR
-                 b:=spaces
-                 if is_String
-                    Input_String
-                    charactersUpperLower(@f0,0)                                 'in Großbuchstaben umwandeln
-                    h_dir(dzeilen,2,@f0)
-                 elseifnot b
+             140: 'DIR
+                 Input_String
+                 charactersUpperLower(@f0,0)                                 'in Großbuchstaben umwandeln
+                 h_dir(dzeilen,2,@f0)
+                 ifnot b
                       h_dir(dzeilen,2,@ext5)                                 'directory ohne parameter nur anzeigen
 
 
              175:'PLAY
-                   if is_string
-                      input_string
-                      mount
-                      if ios.sdopen("R",@f0)
-                         errortext(22,1)
-                      play:=1
-                      ios.sid_sdmpplay(@f0)                                      'in stereo
-                   elseif spaces == "0"
+                   'if is_string
+                   input_string
+                   mount
+                   if ios.sdopen("R",@f0)
+                      errortext
+                   play:=1
+                   ios.sid_sdmpplay(@f0)                                      'DMP-File abspielen
+                   if spaces == "0"
                           playerstatus'ios.sid_dmpstop
                           play:=0
                           close
@@ -1192,31 +1118,35 @@ PRI texec | ht, nt, restart,a,b,c,d,e,f,h,elsa,fvar,tab_typ
                   GetCogs
 
 
-             143:
+             {143:
               ' FILE = <expr>
                  if spaces <> "="
-                    errortext(38,1)'@syn
+                    errortext'38,1)'@syn
                  skipspaces
                  if ios.sdputc(expr(1))
-                    errortext(30,1)                                              'Dateifehler
+                    errortext'30,1)                                              'Dateifehler
+                    }
 
              148:'MKFILE    Datei erzeugen
                  Input_String
                  mount
                  if ios.sdnewfile(@f0)
-                    Errortext(26,1)'@syn
+                    errortext
                  close
 
-             129:' MON <adr>,ram-typ
+             129:' Dump <adr>,ram-typ
                  param(1)
                  ios.dump(prm[0],$8000,prm[1])
 '******************************** neue Befehle ****************************
 
-             165:'Color <vordergr>,<hintergr>,<3.Color>(opt)
+             165:'Colour <vordergr>,<hintergr>,<3.Color>(opt)
                  farbe:=expr(1)&255
                  komma
                  hintergr:=expr(1)&255
                  ios.printboxcolor(win,farbe,hintergr)
+                 ios.window(win,farbe,hintergr,farbe3,farbe3,farbe,hintergr,farbe3,white,0,0,29,39,7,0)
+
+
 
              166: 'CLS
                  ios.printchar(12)
@@ -1246,7 +1176,7 @@ PRI texec | ht, nt, restart,a,b,c,d,e,f,h,elsa,fvar,tab_typ
                  input_string
                  mount
                  if ios.sdnewdir(@f0)
-                    errortext(30,1)
+                    errortext
                  close
 
              177:'PORT
@@ -1260,28 +1190,40 @@ PRI texec | ht, nt, restart,a,b,c,d,e,f,h,elsa,fvar,tab_typ
                     ios.ram_wrword(prm[1],prm[0])
                  else
                     ios.ram_wrlong(prm[1],prm[0])
-
-             142:'BLOAD
+             141:'Aload
                   Input_String
+                  bytemove(@f0[strsize(@f0)],string(".ADM"),4)
+                  'ios.print(@f0)
                   mount
                   if ios.sdopen("R",@f0)
-                     errortext(22,1)
+                     errortext
+                  ios.admload(@f0)
+             142:'BLOAD
+                  Input_String
+                  bytemove(@f0[strsize(@f0)],string(".BEL"),4)
+                  'ios.print(@f0)
+                  mount
+                  if ios.sdopen("R",@f0)
+                     errortext
                   ios.belload(@f0)
 
              147:'RLOAD
                   Input_String
+                  'bytemove(@f0[strsize(@f0)],string(".BIN"),4)
+                  'ios.print(@f0)
                   mount
                   if ios.sdopen("R",@f0)
-                     errortext(22,1)
+                     errortext
                   ios.ldbin(@f0)
 
 
-             139:'CDIR
+             139:'CHDIR
                  Input_String
                  bytefill(@workdir,0,12)
                  bytemove(@workdir,@f0,strsize(@f0))
-                 mount
+                 a:=mount
                  close
+                 Pfadanzeige(a)
                  bytefill(@workdir,0,12)
 
 
@@ -1300,11 +1242,43 @@ PRI texec | ht, nt, restart,a,b,c,d,e,f,h,elsa,fvar,tab_typ
 '****************************ende neue befehle********************************
 
       else
-          errortext(1,1)'@syn
+          errortext
       if spaces == ":"                                                          'existiert in der selben zeile noch ein befehl, dann von vorn
          restart := 1
          tp++
 
+pri Pfadanzeige(fehler)|c,i,f,adr
+
+ifnot fehler
+    if strcomp(@workdir,string(".."))
+       pfadtiefe--
+
+    elseif strcomp(@workdir,string("\"))
+       pfadtiefe:=0
+    else
+       f:=strsize(@workdir)
+       adr:=VERZ_NAME+(12*pfadtiefe)
+       i:=0
+       repeat f                                                                 'String aus Data-Puffer lesen
+              c:=byte[@workdir][i++]
+              ios.ram_wrbyte(c,adr++)                                           'und nach String-Array schreiben
+       ios.ram_wrbyte(0,adr++)                                                  'Null-string-Abschluss
+       pfadtiefe++
+
+    adr:=VERZ_NAME
+    i:=0
+    f:=0
+    byte[@str0][f++]:=Backslash                                                 'erster und folgender Backslash
+
+    repeat pfadtiefe
+           repeat while (c:=ios.ram_rdbyte(adr++))
+                 byte[@str0][f++]:=c
+           byte[@str0][f++]:=Backslash
+           i++
+           adr:=VERZ_NAME+(12*i)
+    byte[@str0][f]:=0
+    ios.Set_Titel_Status(win,2,string("                                      "))
+    ios.Set_Titel_Status(win,2,@str0)
 
 con'***************************************************** XBUS-Funktionen *******************************************************************************************************
 PRI BUS_Funktionen |pr,a,b,c,h,r,str,s
@@ -1369,7 +1343,7 @@ PRI PORT_Funktionen|function,a,b,c,x,y
                     b:=expr(1)                                                  'Byte-Wert, der gesetzt werden soll
                     klammerzu
                     if a<4 or a>6                                               'nur Digital-Port-Register können für die Ausgabe gesetzt werden
-                       errortext(3,1)
+                       errortext
                     c:=a-4                                                      'Portadresse generieren
                     a:=c+PORT                                                   'Port 4=Adresse+0 Port5=Adresse+1 usw. da nur Register 4-6 Ausgaberegister sind
                     ios.plxOut(a,b)                                             'wenn a=4 dann 28+4=32 entspricht Adresse$20 von Digital-Port1
@@ -1399,10 +1373,8 @@ PRI PORT_Funktionen|function,a,b,c,x,y
                        if ios.key==27
                           ios.set_func(cursor,Cursor_Set)
                           quit
-
-
             other:
-                   errortext(3,1)
+                   errortext
 pri ping|i,a,x,y,yt,n
     repeat i from 0 to 128
              ios.plxHalt
@@ -1430,7 +1402,7 @@ PRI Comfunktionen|function,a,b
                     elseif a==0                                                 'Schnittstelle schliessen
                        ios.serclose
                     else
-                       errortext(16,1)
+                       errortext
                     klammerzu
 
             "G"    :'COM G                                                      'Byte von ser.Schnittstelle lesen ohne warten
@@ -1442,7 +1414,7 @@ PRI Comfunktionen|function,a,b
                     ios.serstr(@font)
                     klammerzu
             other:
-                   errortext(3,1)
+                   errortext
 
 
 con '******************************************* diverse Unterprogramme ***********************************************************************************************************
@@ -1506,15 +1478,14 @@ pri is_string |b,c                                                              
     tp:=b
 
     case c
-          quote,"$",144,163:result:=1
-
+          point,quote,"$",144:result:=1
 
 PRI komma
     is_spaces(",",1)
 
 PRI is_spaces(zeichen,t)
     if spaces <> zeichen
-       errortext(t,1)'@syn
+       errortext
     else
        skipspaces
 
@@ -1531,10 +1502,10 @@ PRI klammer(m):b
             else
                b:=expr(0)
             if spaces<>")"
-               errortext(1,1)
+               errortext
             skipspaces
          else
-            errortext(1,1)
+            errortext
 
 PRI klammerauf
     is_spaces(40,1)
@@ -1545,19 +1516,12 @@ PRI klammerzu
 PRI getAnyNumber | c, t,i,punktmerker,d,zahl[20]
 
    case c := byte[tp]
-      quote:
-         if result := byte[++tp]
-            if byte[++tp] == quote
-              tp++
-            else
-               errortext(1,1)                                                   '("missing closing quote")
-         else
-            errortext(31,1)                                                     '("end of line in string")
+
 
       "#":
          c := byte[++tp]
          if (t := hexDigit(c)) < 0
-            errortext(32,1)                                                     '("invalid hex character")
+            errortext                                                            '("invalid hex character")
          result := t
          c := byte[++tp]
          repeat until (t := hexDigit(c)) < 0
@@ -1568,7 +1532,7 @@ PRI getAnyNumber | c, t,i,punktmerker,d,zahl[20]
       "%":
          c := byte[++tp]
          if not (c == "0" or c == "1")
-            errortext(33,1)                                                     '("invalid binary character")
+            errortext                                                            '("invalid binary character")
          result := c - "0"
          c := byte[++tp]
          repeat while c == "0" or c == "1"
@@ -1584,7 +1548,7 @@ PRI getAnyNumber | c, t,i,punktmerker,d,zahl[20]
                  if c==point
                     punktmerker++
                  if punktmerker>1                                               'mehr als ein punkt
-                    errortext(1,1)                                              'Syntaxfehler ausgeben
+                    errortext                                                   'Syntaxfehler ausgeben
                  if c=="e" or c=="E"
                     d:=byte[tp++]
                     if d=="+" or d=="-"
@@ -1599,7 +1563,7 @@ PRI getAnyNumber | c, t,i,punktmerker,d,zahl[20]
           --tp
 
       other:
-           errortext(34,1)                                                      '("invalid literal value")
+           errortext                                                           '("invalid literal value")
 
 PRI hexDigit(c)
 '' Convert hexadecimal character to the corresponding value or -1 if invalid.
@@ -1653,7 +1617,7 @@ PRI h_dir(z,modes,str) | stradr,n,i,dlen,dd,mm,jj,xstart,dr,ad,ps               
           '################## Bildschrirmausgabe ##################################
            if modes>0                                                           'wenn Verzeichnis,dann andere Farbe
                if dr
-                  ios.printBoxColor(0,farbe+1,hintergr)
+                  ios.printBoxColor(win,farbe+8,hintergr)
                ios.print(stradr)
 
                if modes==2
@@ -1661,7 +1625,7 @@ PRI h_dir(z,modes,str) | stradr,n,i,dlen,dd,mm,jj,xstart,dr,ad,ps               
                ios.printnl
                ios.set_func(xstart,set_x)
                i++
-               ios.printBoxColor(0,farbe,hintergr)                           'wieder Standardfarben setzen
+               ios.printBoxColor(win,farbe,hintergr)                           'wieder Standardfarben setzen
                if i==z                                                             '**********************************
 
                   if ios.keywait == ios#CHAR_ESC                                   'auf Taste warten, wenn ESC dann Ausstieg
@@ -1675,9 +1639,24 @@ PRI h_dir(z,modes,str) | stradr,n,i,dlen,dd,mm,jj,xstart,dr,ad,ps               
                  ios.set_func(xstart,set_x)
 
  if modes                                                                         'sichtbare Ausgabe
-    ios.printdec(n)                                                               'Anzahl Dateien
-    ios.print(errortext(43,0))
     ios.printnl
+    ios.printdec(n)                                                               'Anzahl Dateien
+    ios.print(string(" Files"))
+    ios.printnl
+    n:=ios.sdcheckfree
+    i:=ios.sdcheckused
+    ios.printdec(i/1024)
+    ad:=i*100/(i+n)
+    ios.print(string( " Kb used ("))
+    ios.printdec(ad)
+    ios.print(string("%),"))
+    ios.printdec(n/1024)
+    ios.print(string( " Kb free"))
+    ios.printnl
+    ios.printdec((i+n)/1024)
+    ios.print(string( " Kb total "))
+    ios.printnl
+
  ios.set_func(cursor,Cursor_Set)
  filenumber:=n                                                                    'Anzal der Dateien merken
  close                                                                            'ins Root Verzeichnis ,SD-Card schliessen und unmounten
@@ -1716,6 +1695,30 @@ PRI get_dirmarker:dm                                                            
     ios.sddmset(ios#DM_USER)
     dm:=ios.sddmget(ios#DM_USER)
 
+con '********************************* Unterprogramme zur Tile-Verwaltung *********************************************************************************************************
+PRI Win_Set_Tiles|i,a                                                           'Tiles, aus denen die Fenster bestehen, in den Ram schreiben
+    i:=WTILE_RAM
+    a:=0
+    repeat 18
+           ios.ram_wrbyte(windowtile[a++],i++)                                  'Standard-Wintiles in den Ram schreiben
+    ios.windel(9,0,WTILE_RAM)                                                   'alle Fensterparameter löschen und Win Tiles senden
+
+PRI LoadTiletoRam(datei)|adress ,count                       'tile:=tilenr,dateiname,xtile-zahl,ytilezahl
+
+    count:=16*11*64                                                       'anzahl zu ladender Bytes (16*11*16*4=11264)
+    adress:=TILE_RAM                                                            'naechster Tilebereich immer 2816 longs (11264 Bytes) 14 Tilesets moeglich Tileset15 ist der Systemfont
+    mount
+    activate_dirmarker(basicmarker)                                             'ins Basic Stammverzeichnis
+    ios.sdchdir(@tile)                                                          'ins tile verzeichnis wechseln
+    ios.sdopen("R",datei)                                                        'datei öffnen
+    ios.sdxgetblk(adress,count)                                                 'datei in den Speicher schreiben  (der blockbefehl ist viel schneller als der char-Befehl)
+    close
+
+PRI loadtile|anzahl,adress                                             'tileset aus eram in bella laden
+    Win_Set_Tiles
+    adress:=TILE_RAM                                                            'naechster Tilebereich immer 2816 longs (11264 Bytes) 14 Tilesets moeglich
+    anzahl:=2816'ytiles[tileset]*xtiles[tileset]*16                                  'anzahl tilebloecke
+    ios.loadtilebuffer(adress,anzahl)                                           'laden
 
 DAT
 

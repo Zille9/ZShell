@@ -1,7 +1,7 @@
-{{      VGA-Pixel-Treiber
+{{      VGA-64Farben
 ┌──────────────────────────────────────────────────────────────────────────────────────────────────────┐
-│ Autor: Reinhard Zielinski                                                                            │
-│ Copyright (c) 2015 Reinhard Zielinski                                                                │
+│ Autor: Ingo Kripahle,Reinhard Zielinski                                                              │
+│ Copyright (c) 2013 Ingo Kriphale,Reinhard Zielinski                                                  │
 │ See end of file for terms of use.                                                                    │
 │ Die Nutzungsbedingungen befinden sich am Ende der Datei                                              │
 └──────────────────────────────────────────────────────────────────────────────────────────────────────┘
@@ -9,18 +9,18 @@
 Informationen   : hive-project.de
 Kontakt         : zille9@googlemail.com
 System          : Hive
-Name            : VGA-Pixel-Treiber 320x256 Pixel, 40x32 Zeichen
+Name            : VGA-Tile-Treiber 640x480 Pixel, 40x28 Tiles
 Chip            : Bellatrix
 Typ             : Treiber
 Version         : 01
 Subversion      : 00
-Funktion        : Pixel- VGA-Text- und Tastatur-Treiber
+Funktion        : Standard VGA-Text- und Tastatur-Treiber
 
 Dieser Bellatrix-Code kann als Stadardcode im EEPROM gespeichert werden Tilebasierten-Textbildschirm
 und Tastaturfunktionen. Mit dem integrierten Loader kann Bellatrix
 mit einem beliebigen anderen Code geladen werden.
 
-Komponenten     : VGA-Pixel Engine // Author: Marko Lukat
+Komponenten     : VGA64 Tilemap Engine // Author: Kwabena W. Agyeman
                   PS/2 Keyboard Driver v1.0.1     Chip Gracey, ogg   MIT
 
 COG's           : MANAGMENT     1 COG
@@ -31,36 +31,47 @@ COG's           : MANAGMENT     1 COG
 
 Logbuch         :
 
-29-01-2015      -Pixeltreiber 320x256 Pixel (wie KC85), Grundfunktionalität geschaffen
-                -Farbänderungen, Printausgaben, Plot-Funktionen und Scroll-Funktion (Up/Down) geschaffen
-                -Window-Funktion muss noch erarbeitet werden (8 Fenster?, mal sehen)
-                -Cursor On/Off realisiert
-                -3427 Longs frei
-30-01-2015      -Cursorfunktion weiter ausgebaut, sodass Backspace und Edit funktionieren
-                -das Grundgerüst steht, jetzt kommen die Extras
-                -Code zusammengefasst
-                -Plot-Funktion erweitert -> Farbattribute werden mitgeplottet
-                -3428 Longs frei
-31-01-2015      -Funktion PTest testet, ob ein Pixel gesetzt wurde
-                -2.Variante von Kuroneko's Treiber hat vertikal die doppelte Farbauflösung (wie KC85/3)
-                -verbraucht dafür etwas mehr Speicher (logisch)
-                -3303 Longs frei
-02-02-2015      -mit Window-Funktion begonnen, seltsamerweise merkt er sich die Farbe des Fensters 0 nicht ?!
-                -Fenster-Erstellung funktioniert soweit
-                -Fensterscrolling fehlt noch
-                -Fensterlöschen ok
-                -Cursorpositionen merken und wiederherstellen ok
-                -Fensterfarben (außer Fenster 0) ok
-                -2234 Longs frei
-04-02-2015      -Fensterscrolling+Farbscrolling funktioniert
-                -2190 Longs frei
-05-02-2015      -Fensterwechsel funktioniert jetzt korrekt
-                -Win_Del Funktion hinzugefügt (löscht die Fensterparameter eines gesetzten Fensters)
-                -Window-Arten ausgebaut -> bis auf die Scrollleiste, sind die Fensterarten jetzt mit Modus 0 identisch
-                -print-funktion durch put-funktion ersetzt
-                -2201 Longs frei
-19-02-2015      -Funktion Displaypalette hinzugefügt
-                -2130 Longs frei
+23-10-2008-dr235  - erste funktionsfähige version erstellt
+                  - cursor eingebaut
+06-11-2008-dr235  - keyb auf deutsche zeichenbelegung angepasst (ohne umlaute)
+24-11-2008-dr235  - tab, setcur, pos1, setx, sety, getx, gety, setcol, sline, screeninit
+                    curon, curoff
+                  - beltest
+13-03-2009-dr235  - LF als Zeichencode ausgeblendet
+22-03-2009-dr235  - abfrage für statustasten eingefügt
+05-09-2009-dr235  - abfrage der laufenden cogs eingefügt
+                  - deutschen tastaturtreiber mit vollständiger belegung! von ogg eingebunden
+22-03-2010-dr235  - anpassung trios
+01-05-2010-dr235  - scrollup/scrolldown eingebunden & getestet
+03-05-2010-dr235  - settab/getcols/getrows/getresx/getresy eingefügt & getestet
+                  - hive-logo eingefügt
+-------------------
+26-01-2011-dr235  - übernahme und anpassung des treibers aus trios
+31-01-2011-dr235  - backspace als direktes steuerzeichen ($C8) eingefügt
+01-02-2011-dr235  - multiscreenfähigkeit implementiert
+                  - 88 - mgr_wscr: steuert, in welchen screen zeichen geschrieben werden
+                  - 89 - mgr_dscr: steuert welcher screen angezeigt wird
+05-02-2011-dr235  - umwandlung backspace $c8 --> $08
+06-03-2011-dr235  - revision der steuercodes; nur noch funktionen mit parameter
+                    werden über eine 0-sequenz aufgerufen, alle anderen steuerzeichen
+                    werden auf 1-byte-zeichen abgebildet
+20-04-2011-dr235  - integration einer kompatiblen loaderroutine, damit kann der treiber
+                    jetzt direkt aus dem rom gestartet und dennoch bella-code nachgeladen
+                    werden kann
+31.12.2011-dr235  - anpassung für verschiedene zeilenumbrüche in print_char eingefügt
+
+02-04-2013-zille9 - Kompletter Umbau durch Einbindung eines anderen Grafiktreibers
+
+02-06-2013-zille9 - Startbild ala Amiga eingebunden, fordert zum Einlegen einer SD-Card mit TRIOS auf
+
+28-12-2013-zille9 - Fensterfunktionen für 8 Windows mit 8 verschiedenen Stilen geschaffen
+                  - Button-Funktionen auf Abfrage der Mauskoordinaten beschränkt, grafische Funktionen werden wieder von Regnatix erledigt
+                  - dadurch Code gespart, da nur noch die Koordinaten-Puffer und die Button-Nummer benötigt werden
+05-01-2014-zille9 - Fensterverwaltung überarbeitet, bei Klick auf ein Fensterbutton wird die Fensternummer*10+Buttonnummer zurückgegeben
+                  - Beispiel:Schließen Symbol im Fenster 2 gibt 22 zurück (20 für Fenster 2 und 2 für Fensterbutton 2)
+                  - dadurch wird es möglich, mehrere Fenster auf Funktionen abzufragen
+                  - 234 Longs frei
+
 Notizen:
 
 }}
@@ -101,7 +112,7 @@ _XINFREQ     = 5_000_000
 '                                           | |||||+--- tastatur
 '                                           | ||||||+-- vga
 '                                           | |||||||+- tv
-CHIP_SPEC       = %00000000_00000000_00000000_00110110
+CHIP_SPEC       = %00000000_00000000_00000000_00011110
 
 
 KEYB_DPORT   = BEL_KEYBD                               'tastatur datenport
@@ -126,54 +137,60 @@ M4               = %00000010_00000000_00000000_00000000 'busclk=0?
 _pinGroup = 1
 _startUpWait = 2
 
+linelen      =39
 
 buttonbuff=33                                                                                            'Buttonanzahl 1-32 Textbutton oder icon
-Bel_Treiber_Ver =320                                                                                     'Treiber 320x256Pixel
 
-CON
-  res_x = vga#res_x
-  res_y = vga#res_y
+Bel_Treiber_Ver=640                                                                                       'Bellatrix-Treiberversion
 
-  quadP = res_x * res_y / 32
-  quadC = res_x * res_y / 128
+  #$FC, Light_Grey, #$A8, Grey, #$54, Dark_Grey
+  #$C0, Light_Red, #$80, Red, #$40, Dark_Red
+  #$30, Light_Green, #$20, Green, #$10, Dark_Green
+  #$1F, Light_Blue, #$09, Blue, #$04, Dark_Blue
+  #$F0, Light_Orange, #$E6, Orange, #$92, Dark_Orange
+  #$CC, Light_Purple, #$88, Purple, #$44, Dark_Purple
+  #$3C, Light_Teal, #$28, Teal, #$14, Dark_Teal
+  #$FF, White, #$00, Black
 
-  flash = FALSE
-
-  mbyte = $7F | flash & $80
-  mlong = mbyte * $01010101
-
-  linelen       =39
-  #1, CX, CY
 
 OBJ
-  keyb          : "bel-keyb"
-  vga           : "waitvid.320x256.driver.2048a"
-  fl            : "float32-Bas"
-  gc            : "glob-con"
+  vga        : "VGA64_Engine_Tile"
+  keyb       : "bel-keyb"
+  mouse      : "mouse64"
+  gc         : "glob-con"
 
 VAR
 
+  long keycode                                                                                           'letzter tastencode
+  long plen                                                                                              'länge datenblock loader
+  long mousetile[16]                                                                                     'User-Mousetilebuffer
+  word tnr,XPos,YPos
+  word xbound,ybound,xxbound,yybound                                                                     'x und y bereich der Mouse eingrenzen
   byte proghdr[16]                                                                                       'puffer für objektkopf
+  byte mouseshow                                                                                         'Mouse-Pfeil anzeigen oder nicht
   byte strkette[40]                                                                                      'stringpuffer fuer Scrolltext
-  byte cursor,cback[8],putback[8]
-
-  long  keycode                                                                                          'letzter tastencode
-  long  plen                                                                                             'länge datenblock loader
-  long  cursors
-
-  long  screen[quadP]
-  long  colour[quadC]
-  long  link[vga#res_m], base
-  long  x_pos,y_pos
-
-  byte x_start[9], y_start[9], x_end[9], y_end[9],cur_x[9],cur_y[9],vor[9],hinter[9]
-  byte fenster
-  word screenfarbe[9]
+  byte bnumber[buttonbuff],bx[buttonbuff],by[buttonbuff],bxx[buttonbuff]                                 'buttonvariable fuer 33 Buttons
+  byte hintergr
+  byte actor[5]                                                                                          'Actor-Sprite [Tilenr,col1,col2,col3,x,y] Spielerfigur
+  byte action_x,old_action_x
+  byte action_y,old_action_y
+  byte sprite_x[8],sprite_y[8],sprite_old_x[8],sprite_old_y[8]                                           'x,y-Parameter der Sprites
+  byte spritenr[16]                                                                                      'Tilenr der Sprites+Alternativ-Sprites
+  byte spritef1[8],spritef2[8],spritef3[8]                                                               'farben der Sprites
+  byte sprite_dir[8]                                                                                     'Bewegungsrichtung der Sprites
+  byte action_key[5]
+  byte sprite_start[8]
+  byte sprite_end[8]
+  byte Sprite_Move
+  byte collision
+  byte block_tile[10]
+  byte sp_alter
   byte wind[112]
+  byte wint[17]                                                                                          'Tilenummern für die Fenster
 
 CON ''------------------------------------------------- BELLATRIX
 
-PUB main | zeichen,n,i,x,y ,speed                             'chip: kommandointerpreter
+PUB main | zeichen,n,i,x,y ,speed,bs                             'chip: kommandointerpreter
 ''funktionsgruppe               : chip
 ''funktion                      : kommandointerpreter
 ''eingabe                       : -
@@ -184,55 +201,119 @@ PUB main | zeichen,n,i,x,y ,speed                             'chip: kommandoint
   speed:=30
 
   repeat
+    if mouseshow==1                                                                                    'Mauspfeil anzeigen
+         x+=mouse.delta_x
+         if x=<xbound '<1
+            x:=xbound '1
+         if x=>xxbound'639
+            x:=xxbound'639
+         y+= -mouse.delta_y
+         if y=<ybound'1
+            y:=ybound'1
+         if y=>yybound'479
+            y:=yybound'479
+         XPos :=x
+         YPos :=y
+      '++++++++++++++++++++++++ Sprite-Bewegung ++++++++++++++++++++++++++++++++++++++++++++++++++
+    if Sprite_Move==1
+         repeat i from 0 to 7
+            if(spritenr[i]<176) and collision==0                                                         'sprite definiert? und noch keine Kollision passiert
+               if (sprite_x[i]==action_x) and (sprite_y[i]==action_y)                                    'sprite an Player-Position?
+                   collision:=1
+                   quit
+         n++                                                                                             'Bewegungsgeschwindigkeit
+         if n==speed
+            Set_Sprite_XY
+         if n>speed+1
+            n:=0
+      '+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+
+
 
     zeichen := bus_getchar                                                                               '1. zeichen empfangen
-    if zeichen                                                                                           ' > 0
+    if zeichen
+          bs:=zeichen                                                                                       ' > 0
+          if zeichen==8                                                                                  'Backspace
+             bs:=32
+          vga.printCharacter(zeichen,@tileset[bs*16])
 
-          chr(zeichen)
+
     else
       zeichen := bus_getchar                                                                             '2. zeichen kommando empfangen
       case zeichen
-       gc#BEL_KEY_STAT          : key_stat                                                               '1: Tastaturstatus senden
-       gc#BEL_KEY_CODE          : key_code                                                               '2: Tastaturzeichen senden
-       gc#BEL_DPL_SETY          : y_pos:=bus_getchar'cursor_rest
-       gc#BEL_KEY_SPEC          : key_spec                                                               '4: Statustasten ($100..$1FF) abfragen
-       gc#BEL_SCR_CHAR          : qchar(bus_getchar)                                                     '6: zeichen ohne steuerzeichen ausgeben
-       gc#BEL_KEY_INKEY         : bus_putchar(keyb.taster)
-                                  keyb.clearkeys
-       gc#BEL_DPL_SETX          : x_pos:=bus_getchar                                                     '8: x-position setzen
-       gc#BEL_CLEARKEY          : keyb.clearkeys                                                         'tastaturpuffer loeschen
-       gc#BEL_GETLINELEN        : bus_putchar(linelen)                                                                          '16 Zeilenlänge in diesem Treiber
-       gc#BEL_CURSORRATE        : cursor:=bus_getchar & 1
-       gc#BEL_BOXCOLOR          : setcolor(bus_getchar,bus_getchar,bus_getchar)
-       gc#BEL_SCROLLUP          : scrollup(bus_getchar,bus_getchar)
-       gc#BEL_SCROLLDOWN        : scrolldown(bus_getchar,bus_getchar)
-       gc#BEL_DPL_2DBOX         : Box(bus_getchar,bus_getchar,bus_getchar,bus_getchar,bus_getchar,bus_getchar)
-       gc#BEL_REDEFINE          : redefine
-       gc#BEL_DPL_SETPOS        : locate(bus_getchar,bus_getchar)
-       gc#BEL_TESTXY            : i:=ptest(sub_getword,sub_getword)
-                                  bus_putchar(i)                                                                               'PTest, testet, ob ein Pixel gesetzt ist
-       gc#BEL_WINDOW            : printwindow(bus_getchar)
-       gc#BEL_GETX              : bus_putchar(x_pos)                                                                             'Cursor-X-Position abfragen
-       gc#BEL_GETY              : bus_putchar(y_pos)                                                                             'Cursor-Y-Position abfragen
-       gc#BEL_DPL_LINE          : line(sub_getword,sub_getword,sub_getword,sub_getword,bus_getchar,bus_getchar) 'x,y,xx,yy,farbe
-       gc#BEL_DPL_PIXEL         : Plot(sub_getword,sub_getword,bus_getchar)
-       gc#BEL_DPL_CIRCLE        : circle(sub_getword,sub_getword,sub_getword,sub_getword,bus_getchar,bus_getchar)                            'Kreis
-       gc#BEL_RECT              : rect(sub_getword,sub_getword,sub_getword,sub_getword,bus_getchar,bus_getchar)
-       gc#BEL_DPL_PALETTE       : Displaypalette
-       gc#BEL_DEL_WINDOW        : Del_Window                                                                                    'Fensterparameter löschen
-       gc#BEL_SET_TITELSTATUS   : Set_Titel_Status                                                                               'Titeltext oder Statustext in einem Fenster setzen
-       gc#BEL_BACK              : Backup_Restore_area(1)                                                                         'Bildschirmbereich sichern
-       gc#BEL_REST              : Backup_Restore_area(0)                                                                         'Bildschirmbereich wiederherstellen
-       gc#BEL_WINDOW            : Window                                                                                         'Fensterstil erstellen
-       gc#BEL_VGAPUT            : put(bus_getchar,bus_getchar,bus_getchar)                                                       'Char an x,y ausgeben
-'       ----------------------------------------------  CHIP-MANAGMENT
-       gc#BMGR_LOAD             : mgr_load                                                                                      'neuen bellatrix-code laden
-       'gc#BMGR_FLASHLOAD        : flash_loader
-       gc#BMGR_GETSPEC          : mgr_getspec
-       gc#BMGR_GETCOGS          : mgr_getcogs                                                                                   'freie cogs abfragen
-       gc#BMGR_GETVER           : mgr_bel                                                                                       'Rückgabe Grafiktreiber 64
-       gc#BMGR_REBOOT           : reboot                                                                                        'bellatrix neu starten
+        gc#BEL_KEY_STAT         : bus_putchar(keyb.gotkey)                                                                      '1: Tastaturstatus senden
+        gc#BEL_KEY_CODE         : key_code                                                                                      '2: Tastaturzeichen senden
+        gc#BEL_DPL_SETY         : vga.sety(bus_getchar)
+        gc#BEL_KEY_SPEC         : bus_putchar(keycode >> 8)                                                                     '4: Statustasten ($100..$1FF) abfragen
+        gc#BEL_DPL_MOUSE        : displaymouse                                                                                  '5: Mousezeiger anzeigen
+        gc#BEL_SCR_CHAR         : vga.printqChar(@tileset[bus_getchar*16])                                                                   '6: zeichen ohne steuerzeichen ausgeben
+        gc#BEL_KEY_INKEY        : bus_putchar(keyb.taster)
+                                   keyb.clearkeys
+        gc#BEL_DPL_SETX         : vga.setx(bus_getchar)                                                                         '8: x-position setzen
+        gc#BEL_LD_MOUSEBOUND    : mousebound                                                                                    '9: mousebereich eingrenzen
+        gc#BEL_MOUSEX           : bus_putchar(XPOS>>4)                                                                          '10:abfrage absulute x-position
+        gc#BEL_MOUSEY           : bus_putchar(YPos>>4)                                                                          '11:abfrage absulute y-position
+        gc#BEL_MOUSEZ           : sub_putlong(mouse.abs_z)                                                                      '12:abfrage absulute z-position (Scrollrad)
+        gc#BEL_CLEARKEY         : keyb.clearkeys                                                                                'tastaturpuffer loeschen
+        gc#BEL_MOUSE_BUTTON     : mouse_button(bus_getchar)                                                                     '14:abfrage Mouse Button
+        gc#BEL_BOXSIZE          : BoxSize                                                                                       '15:BoxSize
+        gc#BEL_GETLINELEN       : bus_putchar(linelen)                                                                          '16 Zeilenlänge in diesem Treiber
+        gc#BEL_CURSORRATE       : vga.printCursorRate(bus_getchar)
+        gc#BEL_BOXCOLOR         : PrintBoxColor
+        gc#BEL_ERS_3DBUTTON     : destroy_Button
+        gc#BEL_SCROLLUP         : scrollup
+        gc#BEL_SCROLLDOWN       : scrolldown
+       'gc#BEL_DPL_3DBOX        : display3DBox
+       'gc#BEL_DPL_3DFRAME      : display3DFrame
+        gc#BEL_DPL_2DBOX        : display2DBox
+        gc#BEL_Send_BUTTON      : Get_Button_Param
+        gc#BEL_SCROLLSTRING     : scrollString
+'       gc#BEL_DPL_STRING       : displayString                                                                                 'String mit Propellerfont darstellen
+        gc#BEL_THIRDCOLOR       : vga.dritte_Farbe(bus_getchar)                                                                 '3.Tilefarbe
+        gc#BEL_LD_MOUSEPOINTER  : mousepointer
+        gc#BEL_MOUSE_PRESENT    : bus_putchar(mouse.present)                                                                    'Test auf Maus
+        gc#BEL_DPL_SETPOS       : vga.printat(bus_getchar,bus_getchar)
+        gc#BEL_DPL_TILE         : displayTile
+        gc#BEL_DPL_WIN          : vga.printwindow(bus_getchar)
+        gc#BEL_LD_TILESET       : loadtile                                                                                      'Tiledatei in Puffer laden
+        gc#BEL_DPL_PIC          : displaypic                                                                                    'komplette Tile-Datei anzeigen
+        gc#BEL_GETX             : bus_putchar(vga.getx)                                                                         'Cursor-X-Position abfragen
+        gc#BEL_GETY             : bus_putchar(vga.gety)                                                                         'Cursor-Y-Position abfragen
+        gc#BEL_DPL_LINE         : line(sub_getword,sub_getword,sub_getword,sub_getword,bus_getchar,bus_getchar)                             'x,y,xx,yy,farbe
+        gc#BEL_DPL_PIXEL        : plot
+        gc#BEL_SPRITE_PARAM     : Sprite_Parameter                                                                              'Sprite-Parameter
+        gc#BEL_SPRITE_POS       : Set_Sprite_XY                                                                                 'Sprite bewegen
+        gc#BEL_ACTOR            : Actor_Parameter                                                                               'Player-Parameter
+        gc#BEL_ACTORPOS         : actorxy(bus_getchar)                                                                          'Player bewegen
+        gc#BEL_ACT_KEY          : Set_Action_Key                                                                                'spielertasten
+        gc#BEL_SPRITE_RESET     : Reset_Sprite                                                                                  'Sprite anhalten/loeschen
+        gc#BEL_SPRITE_MOVE      : SpriteMove                                                                                    'spritebewegung aktivieren/deaktivieren
+        gc#BEL_SPRITE_SPEED     : speed:=bus_getchar                                                                            'spritegeschwindigkeit
+        gc#BEL_GET_COLLISION    : bus_putchar(collision)                                                                        'Kollisionsflag abfragen
+                                   collision:=0
+        gc#BEL_GET_ACTOR_POS    : Get_Actor_Pos                                                                                 'Playerposition
+        gc#BEL_SEND_BLOCK       : Get_Block                                                                                     'Tile lesen
+'        gc#BEL_FIRE_PARAM       : Fire_Parameter
+'        gc#BEL_FIRE             : Fire
+        gc#BEL_DPL_PALETTE      : Displaypalette                                                                                'Farbpalette anzeigen
+        gc#BEL_DEL_WINDOW       : Del_Window                                                                                    'Fensterparameter löschen
+        gc#BEL_SET_TITELSTATUS  : Set_Titel_Status                                                                              'Titeltext oder Statustext in einem Fenster setzen
+        gc#BEL_BACK             : Backup_Restore_area(1)                                                                        'Bildschirmbereich sichern
+        gc#BEL_REST             : Backup_Restore_area(0)                                                                        'Bildschirmbereich wiederherstellen
+        gc#BEL_WINDOW           : Window                                                                                        'Fensterstil erstellen
+        gc#BEL_GET_WINDOW       : get_window                                                                                    'Tastendruck im Fenster abfragen
+        gc#BEL_CHANGE_BACKUP    : Change_Backuptile                                                                             'Backuptile unter dem Player ändern (Itemsammeln)
+        gc#BEL_VGAPUT           : vga.put(@tileset[bus_getchar*16],bus_getchar,bus_getchar)
+        gc#BEL_RECT             : rect(sub_getword,sub_getword,sub_getword,sub_getword,bus_getchar,bus_getchar)
+        gc#BEL_BIGFONT          : vga.bigfont(bus_getchar)                                                                      'Umschaltung Fontsatz
 
+
+        gc#BMGR_LOAD        : mgr_load                                                                   'neuen bellatrix-code laden
+        'gc#BMGR_FLASHLOAD   : flash_loader
+        gc#BMGR_GETCOGS     : mgr_getcogs                                                                'freie cogs abfragen
+        gc#BMGR_GETVER      : sub_putlong(Bel_Treiber_Ver)                                               'Rückgabe Grafiktreiber 64
+        gc#BMGR_REBOOT      : reboot                                                                     'bellatrix neu starten
 
 PUB init_subsysteme|i',x,y,tn,tmp                                   'chip: initialisierung des bellatrix-chips
 ''funktionsgruppe               : chip
@@ -248,470 +329,50 @@ PUB init_subsysteme|i',x,y,tn,tmp                                   'chip: initi
   dira := db_in                                                                                          'datenbus auf eingabe schalten
   outa[bus_hs] := 1                                                                                      'handshake inaktiv
 
-
-  link{0} := @screen{0}
-  link[1] := @cursors << 16 | @colour{0}
-  vga.init(-1, @link)                             ' start driver
-
-  waitcnt(clkfreq+cnt)
-  plot_window(0,7,1,0,0,0,0,0,0,0,0,39,31,1,0)
-  waitcnt(clkfreq+cnt)
-  fl.start
   keyb.start(keyb_dport, keyb_cport)                                                                     'tastaturport starten
 
-  bytefill(@cback,0,8)
-  bus_putchar(88)
+  ifnot vga.TMPEngineStart(_pinGroup, @XPos, @YPos)
+    reboot
+  waitcnt((clkfreq * _startUpWait) + cnt)
+  mouse.start(BEL_MOUSED, BEL_MOUSEC)
+
+  mouseshow:=0                                                                                           'Mousezeiger aus
+  xbound:=1                                                                                              'Mouse-Bereich Grundeinstellung
+  xxbound:=639
+  ybound:=1
+  yybound:=479
+  repeat i from 0 to 7
+         spritenr[i]:=255                                                                                'sprites abschalten
+
+
+  action_key[0]:=2                                                                                       'action-tasten vorbelegen
+  action_key[1]:=3
+  action_key[2]:=4
+  action_key[3]:=5
+  action_key[4]:=32
+  sp_alter:=0
+  collision:=0
+  vga.bigfont(0)
+  vga.printBoxColor(0,orange,black)
+  vga.printCursorColor(orange)
+  vga.printBoxSize(0,0, 0, 29, 39)
+  vga.printCharacter(12,0)                                                                                 'cls
+  vga.printCursorRate(3)
+  vga.printwindow(0)
+
+  '##### Fensterparameter #####
+  wind[0]:=0
+  wind[1]:=1
+  wind[2]:=0
+  wind[3]:=0
+  wind[4]:=39
+  wind[5]:=29
+  wind[6]:=0
+  wind[7]:=255
+  wind[8]:=0
+
+  'bus_putchar(88)                                                                                        'Treiber-bereit-Rückmeldung
 
-con'######################################### neue Funktionen ##################################################
-pub setcolor(w,v,h)|vordergrund,hintergrund
-    vor[w]:=v
-    hinter[w]:=h
-    v:=v*8
-    h:=h+v
-    screenfarbe[w]:=0                                      'aktuellen wert löschen
-    screenfarbe[w] := v << 8
-    screenfarbe[w] := screenfarbe[w] + h
-
-pub qchar(c)
-    put(c,x_pos,y_pos)   'qChar
-              x_pos++
-    scan_limit
-pri cursor_rest
-    if cursor
-       charbackup(0,0)                 'zeichen unter dem Cursor wiederherstellen
-
-PUB chr(ch)|x,y,g
-    'Cursor_rest                                 'zeichen unter dem Cursor wiederherstellen
-    case ch
-        2:return'charbackup(1,1)
-        5:x_pos --
-        6:x_pos ++
-        7:x_pos:=x_start[fenster]              'Home
-          y_pos:=y_start[fenster]
-        8:x_pos--                              'Backspace
-        9:x_pos += (4 - (x_pos & $3))          'Tab
-        10:
-        12:cls                  'CLS
-           x_pos:=x_start[fenster]
-           y_pos:=y_start[fenster]
-
-        13:'Cursor_rest
-           y_pos++              'Return
-           x_pos:=x_start[fenster]
-           charbackup(1,0)
-        other:put(ch,x_pos,y_pos)   'Char
-              x_pos++
-        scan_limit
-
-pub scan_limit
-    if x_pos<x_start[fenster]
-       x_pos:=x_end[fenster]
-       y_pos--
-    if x_pos>x_end[fenster]
-       x_pos:=x_start[fenster]
-       y_pos++
-    if y_pos>y_end[fenster]
-       scrollup(1,0)
-    if y_pos<y_start[fenster]
-       y_pos:=y_start[fenster]
-    Cursor_show
-
-pub Cursor_show
-    if cursor
-       cursors.byte[CX]:=x_pos
-       cursors.byte[CY]:=y_pos
-
-    else
-       cursors.byte[CX] := constant(res_x / 8)                ' off
-
-pub locate(y,x)
-    cursor_rest
-    x_pos:=x
-    y_pos:=y
-    Cursor_show
-
-pub Displaypalette| hx,hy,h,v,ht,i
-    hx:=bus_getchar
-    hy:=bus_getchar
-
-    x_pos:=hx
-    y_pos:=hy
-    h:=0
-    v:=vor[0]
-    ht:=hinter[0]
-    repeat i from 0 to 31
-         if i>15 and i//2==0
-            h++
-         setcolor(0,i,h)
-         chr(96)
-         if i==15
-            y_pos++
-            x_pos:=hx
-
-    setcolor(0,v,ht)
-    chr(32)
-
-Pub plot(x,y,c)|yy,h,farbe,v
-    if x => 0 and x < 320 and y => 0 and y < 256
-      yy:=y*10
-      v:=c*8
-      h:=hinter[fenster]
-      h+=v
-      farbe:=0                                      'aktuellen wert löschen
-      farbe := v << 8
-      farbe := farbe + h
-      if c<31
-         colour.byte[(x/8) + ((y/4) * 40)] :=farbe  'dieser Treiber hat eine Farbauflösung von 40x64 Tiles 8x4 Pixel (10 Longs*64 Farbzeilen)
-         screen[yy+x>>5]|= |<x
-      else
-         screen[yy+x>>5]&= ! |<x
-
-pub ptest(x,y):c|t,yy
-  if x => 0 and x < 320 and y => 0 and y < 256
-     yy:=y*10
-     c:=(screen[yy + x >> 5] >> x)&1                  'get
-
-pub fill(x,y,yy,f)|i,a,b,c,d
-    a:=x
-    b:=x+1
-    c:=0
-    repeat i from y to yy
-       repeat while (not c or not d)
-          ifnot ptest(a,i)
-                plot(a,i,f)
-                a:=a-1
-          else
-              c:=1
-          ifnot ptest(b,i)
-                plot(b,i,f)
-                b:=b+1
-          else
-              d:=1
-       d:=c:=0
-       a:=x
-       b:=x+1
-
-Pub CLS|a,b
-
-    repeat a from y_start[fenster] to y_end[fenster]
-           b:=x_start[fenster] + (a * 320)
-           repeat 8
-                  bytefill(@screen.byte[b],0,x_end[fenster]-x_start[fenster]+1)
-                  b+=40
-           bytefill(@colour.byte[x_start[fenster] + (a * 80)],screenfarbe[fenster],x_end[fenster]-x_start[fenster]+1)
-           bytefill(@colour.byte[x_start[fenster] + (a * 80) + 40], screenfarbe[fenster],x_end[fenster]-x_start[fenster]+1)
-
-pub str(strg)
-    repeat strsize(strg)
-         chr(byte[strg++])
-
-PUB line(x0, y0, x1, y1,n,dummy) | dX, dY, x, y, err, stp
-  result := ((||(y1 - y0)) > (||(x1 - x0)))
-  if(result)
-    swap(@x0, @y0)
-    swap(@x1, @y1)
-  if(x0 > x1)
-    swap(@x0, @x1)
-    swap(@y0, @y1)
-  dX := (x1 - x0)
-  dY := (||(y1 - y0))
-  err := (dX >> 1)
-  stp := ((y0 => y1) | 1)
-  y := y0
-  repeat x from x0 to x1
-    if(result)
-      plot(y, x,n)
-    else
-      plot(x, y,n)
-    err -= dY
-    if(err < 0)
-      y += stp
-      err += dX
-
-PRI swap(x, y)
-  result  := long[x]
-  long[x] := long[y]
-  long[y] := result
-
-{Pub Triangle(x,y,xx,yy,z,zz,n)
-    line(x,y,xx,yy,n)
-    line(x,y,z,zz,n)
-    line(z,zz,xx,yy,n)
-}
-PUB rect(x0, y0, x1, y1,n,fil) | i
-
-    line(x0, y0, x1, y0,n,0)
-    line(x0, y0, x0, y1,n,0)
-    line(x0, y1, x1, y1,n,0)
-    line(x1, y0, x1, y1,n,0)
-    if fil
-       fill(x0,y0,y1-1,n)
-
-PUB circle(x,y,r,r2,set,fil)|i,xp,yp,a,b,c,d,hd,rp
-    d:=630 '(2*pi*100)
-    hd:=fl.ffloat(100)
-    xp:=x
-    yp:=y
-    rp:=r2
-
-    x:=fl.ffloat(x)
-    y:=fl.ffloat(y)
-    r:=fl.ffloat(r)
-    r2:=fl.ffloat(r2)
-
-    repeat i from 0 to d 'step 2
-          c:=fl.fdiv(fl.ffloat(i),hd)
-          a:=fl.fadd(x,fl.fmul(fl.cos(c),r))
-          b:=fl.fadd(y,fl.fmul(fl.sin(c),r2))
-          Plot(fl.FRound(a),fl.FRound(b),set)
-    if fil
-       fill(xp,(yp+1)-rp,(yp+rp)-1,set)
-
-pub box(f,y,x,yy,xx,sh)
-    if y<31 and yy<31 and x<39 and xx<39
-       if sh
-          Plotbox(f,y+1,x+1,yy+1,xx+1,199)
-       Plotbox(f,y,x,yy,xx,32)
-
-pub plotBox(f,y,x,yy,xx,ch)|a,b,c,tmph
-    tmph:=hinter[fenster]
-    setcolor(fenster,vor[fenster],f)
-    a:=xx-x
-    b:=yy-y
-    c:=x
-    repeat b from y to yy
-         repeat a from x to xx
-              put(ch,a,b)
-
-    setcolor(fenster,vor[fenster],tmph)
-
-pub charbackup(n,x)|i,b
-    b := x_pos+ x + y_pos * 320
-    i:=0
-  repeat 8
-    if n
-       cback.byte[i++] := screen.byte[b]                'backup
-    else
-       screen.byte[b]:=cback.byte[i++]                  'restore
-    b += 40
-
-pub put(c,x,y)|b
-  b := x + y * 320
-  c *= 8
-  'c&=255
-
-  repeat 8
-    screen.byte[b] := font[c++]
-    b += 40
-    'c += 256
-
-  colour.byte[x + y * 80] := screenfarbe[fenster]{& $7F}
-  colour.byte[x + y * 80 + 40] := screenfarbe[fenster]
-
-pub redefine|n,c
-    c:=bus_getchar
-    c*=8
-    repeat 8
-          font[c++]:=bus_getchar
-
-pub scrollup(n,r)|a,b,c
-repeat n
-  repeat a from y_start[fenster] to y_end[fenster]-1
-           b:=x_start[fenster] + (a * 320)
-           c:=x_start[fenster] + (a * 80)
-           repeat 8
-                  bytemove(@screen.byte[b],@screen.byte[b+320],x_end[fenster]+1-x_start[fenster])
-                  b+=40
-           bytemove(@colour.byte[c],@colour.byte[c+80],x_end[fenster]-x_start[fenster]+1)
-           bytemove(@colour.byte[c + 40],@colour.byte[c+120],x_end[fenster]-x_start[fenster]+1)
-
-  repeat 8
-         bytefill(@screen.byte[b], 0,(x_end[fenster]+1-x_start[fenster]))
-         b+=40
-
-  'bytefill(@colour.byte[c],screenfarbe[fenster],x_end[fenster]-x_start[fenster])
-  'bytefill(@colour.byte[c + 40], screenfarbe[fenster],x_end[fenster]-x_start[fenster])
-  y_pos--
-  if y_pos<y_start[fenster]
-     y_pos:=y_start[fenster]
-  x_pos:=x_start[fenster]
-  if r
-     waitcnt( cnt+=clkfreq / (1000/r))
-
-pub scrolldown(n,r)|i,pos,co
-
-  repeat n
-      waitVBL
-      repeat i from 0 to 31
-           pos:=2480-(i*80)
-           co:=620-(i*20)
-           longmove(@screen[pos],@screen[pos-80], 80)
-           longmove(@colour[co],@colour[co-20],20)
-
-      longfill(@screen[0], 0, 80)
-      bytefill(@colour[0], screenfarbe[fenster], 80)
-      y_pos++
-      if y_pos>31
-         y_pos:=31
-      x_pos:=0
-      if r
-         waitcnt( cnt+=clkfreq / (1000/r))
-
-
-pub Window|win,f1,f2,f3,f4,f5,f6,f7,f8,x,y,xx,yy,modus,shd
-
-        win:=bus_getchar                                                                                 'fensternummer
-        f1:=bus_getchar                                                                                  'farbe1            'vordergrund
-        f2:=bus_getchar                                                                                  'farbe2            'hintergrund
-        f3:=bus_getchar                                                                                  'farbe3            'titel
-        f4:=bus_getchar                                                                                  'farbe4            'frame
-        f5:=bus_getchar                                                                                  'farbe5            'titelhintergrund
-        f6:=bus_getchar                                                                                  'farbe6            'titeltext
-        f7:=bus_getchar                                                                                  'farbe7            'statusback
-        f8:=bus_getchar                                                                                  'farbe8            'statustext
-        y:=bus_getchar                                                                                   'y
-        x:=bus_getchar                                                                                   'x
-        yy:=bus_getchar                                                                                  'yy
-        xx:=bus_getchar                                                                                  'xx
-        modus:=bus_getchar                                                                               'art des Fensters (mit oder ohne Titel,rahmen,Pfeiltasten,Statusleiste)
-        shd  :=bus_getchar                                                                               'Schatten
-
-        plot_window(win,f1,f2,f3,f4,f5,f6,f7,f8,x,y,xx,yy,modus,shd)
-
-pri Del_Window|wnr,i,a
-    i:=0
-    wnr:=bus_getchar
-    if a==9
-       return
-    a:=wnr*14
-    wind[a]:=0
-
-  printwindow(0)
-
-  x_start[wnr]       :=x_start[0]
-  x_end[wnr]         :=x_end[0]
-  y_start[wnr]       :=y_start[0]
-  y_end[wnr]         :=y_end[0]
-  screenfarbe[wnr]   :=screenfarbe[0]
-  vor[wnr]           :=vor[0]
-  hinter[wnr]        :=hinter[0]
-  cur_x[wnr]         :=cur_x[0]
-  cur_y[wnr]         :=cur_y[0]
-
-pri plot_window(win,f1,f2,f3,f4,f5,f6,f7,f8,x,y,xx,yy,modus,shd)|a,b,c,d,posi
-
-        fenster:=win
-        a:=b:=c:=d:=0
-
-        if shd
-           Plotbox(f2,y+1,x+1,yy+1,xx+1,199)
-        if modus==2 or modus>3
-           rect(x*8-1, y*8+7, xx*8+8, yy*8+8,f3,0)
-           a:=1
-        if modus==3 or modus==4 or modus>5              'Titelzeile
-           plotbox(f5,y,x,y,xx,32)
-           a:=1
-        if modus>6
-           plotbox(f7,yy,x,yy,xx,32)                      'Statuszeile                                        'status(yy,x,xx,f1,f2,f7)
-           b:=1
-
-        setcolor(win,f1,f2)
-        Plotbox(f2,y+a,x,yy-b,xx,32)
-        x_pos:=x
-        y_pos:=y+a
-
-        posi:=win*14
-        wind[posi++]:=win
-        wind[posi++]:=modus
-        wind[posi++]:=x
-        wind[posi++]:=y
-        wind[posi++]:=xx
-        wind[posi++]:=yy
-        wind[posi++]:=f1
-        wind[posi++]:=f2
-        wind[posi++]:=f3
-        wind[posi++]:=f4
-        wind[posi++]:=f5
-        wind[posi++]:=f6
-        wind[posi++]:=f7
-        wind[posi++]:=f8
-
-     x_start[win]:=x_pos
-     y_start[win]:=y_pos
-     x_end[win]:=xx
-     y_end[win]:=yy-b
-     cur_x[win]:=x_pos
-     cur_y[win]:=y_pos
-
-pub printwindow(w)|v
-
-  cur_x[fenster]:=x_pos         'aktuelle Cursorposition speichern
-  cur_y[fenster]:=y_pos
-  fenster:=w
-  y_pos:=cur_y[fenster]         'alte Cursorposition setzen
-  x_pos:=cur_x[fenster]
-
-pri Set_Titel_Status|win,Tit_Stat,len,posi,x,y,tmp                                                           'Titel-oder Statustext in einem Fenster setzen
-    tmp:=fenster
-    win     :=bus_getchar                                                                                'fensternummer
-    Tit_Stat:=bus_getchar                                                                                'Titel oder Statustext
-    len     :=bus_getchar                                                                                'stringlänge
-    posi:=win*14
-    x:=wind[posi+2]
-
-    printwindow(win)
-
-    if (wind[posi+1]==3 or  wind[posi+1]==4 or  wind[posi+1]>5) and Tit_Stat==1 and wind[posi]
-       y:=wind[posi+3]              'Titeltext
-       plotbox(wind[posi+10],y,x,y,wind[posi+4],32)                                                       'Titelleiste löschen
-       bus_getstr_plot(posi,len, y, x+1,1,0)                                                             'neuen Titeltext schreiben
-    elseif wind[posi+1]>6 and Tit_Stat==2 and wind[posi]
-       y:=wind[posi+5]           'Statustext
-       plotbox(wind[posi+10],y,x,y,wind[posi+4],32)                                                       'Statusbalken löschen
-       bus_getstr_plot(posi,len,y, x+1,1,2)                                                              'neuen Statustest schreiben
-    else
-       bus_getstr_plot(posi,len,y, x+1,0,0)                                                              'keine Bildschirmausgabe
-    printwindow(tmp)
-
-pri bus_getstr_plot(win,len,y,x,m,b)|c
-
-
-       repeat len
-              c:=bus_getchar
-              if x<wind[win+4] and m==1
-                 put(c,x++,y)
-              else
-                 next
-
-pub Backup_Restore_Area(n)|x,y,xx,yy,a,b,zaehler,y2
-    x:=bus_getchar
-    y:=bus_getchar
-    xx:=bus_getchar
-    yy:=bus_getchar
-
-    repeat b from y to yy
-           repeat a from x to xx
-                  y2:=a+b*320
-                  if n
-                     repeat 8
-                            bus_putchar(screen.byte[y2]]
-                            y2+=40
-                     bus_putchar(colour.byte[a + b * 80])
-                     bus_putchar(colour.byte[a + b * 80 + 40])
-                  else
-                     repeat 8
-                            screen.byte[y2]:=bus_getchar
-                            y2+=40
-                     colour.byte[a + b * 80] := bus_getchar
-                     colour.byte[a + b * 80 + 40] := bus_getchar
-
-pub waitVBL : n
-
-  n := link[3]
-  repeat
-  while n == link[3]
-
-con'
 PUB bus_putchar(zeichen)                                'chip: ein byte an regnatix senden
 ''funktionsgruppe               : chip
 ''funktion                      : ein byte an regnatix senden
@@ -789,11 +450,6 @@ PUB sub_getword:wert                                    'sub: long empfangen
   wert := wert + bus_getchar
 
 CON ''------------------------------------------------- CHIP-MANAGMENT-FUNKTIONEN
-
-pub mgr_bel
-    sub_putlong(Bel_Treiber_Ver)                                                                         'rückgabe 65 für tile-driver 64 farben stark geänderte Version
-PUB mgr_getspec                                         'cmgr: abfrage der spezifikation des chips
-  sub_putlong(CHIP_SPEC)
 
 PUB mgr_getcogs: cogs |i,c,cog[8]                                                                        'cmgr: abfragen wie viele cogs in benutzung sind
 ''funktionsgruppe               : cmgr
@@ -897,12 +553,9 @@ get_ret                 ret
 '                  |||||                 -------- d0..d7
 DINP    long  %00001000000000000000000000000000  'constant dinp hex  \ bus input
 DOUT    long  %00001000000000000000000011111111  'constant dout hex  \ bus output
-
 M_0     long  %00001000000000000000000000000000  'bus inaktiv
-
 M_1     long  %00000010000000000000000000000000
 M_2     long  %00000010100000000000000000000000  'busclk=1? & /cs=0?
-
 M_3     long  %00000000000000000000000000000000
 M_4     long  %00000010000000000000000000000000  'busclk=0?
 
@@ -920,10 +573,6 @@ reg_b   res   1
 
 CON ''------------------------------------------------- KEYBOARD-FUNKTIONEN
 
-PUB key_stat                                                                                             'key: tastaturstatus abfragen
-
-  bus_putchar(keyb.gotkey)
-
 PUB key_code                                                                                             'key: tastencode abfragen
 
   keycode := keyb.key
@@ -931,9 +580,624 @@ PUB key_code                                                                    
     $c8: keycode := $08                                                                                  'backspace wandeln
   bus_putchar(keycode)
 
-PUB key_spec                                                                                             'key: statustaten vom letzten tastencode abfragen
+CON ''------------------------------------------------- SCREEN-FUNKTIONEN
+pub plot|x,y,f
+    x:=sub_getword
+    y:=sub_getword
+    f:=bus_getchar
+    vga.plot(f,y,x)
 
-  bus_putchar(keycode >> 8)
+PUB rect(x0, y0, x1, y1,n,dummy)
+
+    line(x0, y0, x1, y0,n,0)
+    line(x0, y0, x0, y1,n,0)
+    line(x0, y1, x1, y1,n,0)
+    line(x1, y0, x1, y1,n,0)
+
+pub Window|win,f1,f2,f3,f4,f5,f6,f7,f8,x,y,xx,yy,modus,a,b,c,d,posi,shd
+
+        win:=bus_getchar                                                                                 'fensternummer
+        f1:=bus_getchar                                                                                  'farbe1            'vordergrund
+        f2:=bus_getchar                                                                                  'farbe2            'hintergrund
+        f3:=bus_getchar                                                                                  'farbe3            'Cursor
+        f4:=bus_getchar                                                                                  'farbe4            'frame
+        f5:=bus_getchar                                                                                  'farbe5            'titelhintergrund
+        f6:=bus_getchar                                                                                  'farbe6            'titeltext
+        f7:=bus_getchar                                                                                  'farbe7            'statusback
+        f8:=bus_getchar                                                                                  'farbe8            'statustext
+        y:=bus_getchar                                                                                   'y
+        x:=bus_getchar                                                                                   'x
+        yy:=bus_getchar                                                                                  'yy
+        xx:=bus_getchar                                                                                  'xx
+        modus:=bus_getchar                                                                               'art des Fensters (mit oder ohne Titel,rahmen,Pfeiltasten,Statusleiste)
+        shd  :=bus_getchar                                                                               'Schatten
+        a:=b:=c:=d:=0
+        if shd
+           vga.display2DBox($56, y+1, x+1, yy+1, xx+1)                                                   'Fensterschatten
+        if modus==2 or modus>3
+           rahmen(y,x,yy,xx,modus,f1,f2,f4)
+                   a:=b:=c:=d:=1
+        if modus==3 or modus==4 or modus>5
+           titel(y,x,xx,f1,f2,f5,f4)
+           a:=1
+        if modus==5 or modus==6 or modus==8
+           pfeile(y,yy,xx,f1,f2,f4,modus)
+        if modus>6
+           status(yy,x,xx,f1,f2,f7)
+
+
+        vga.printBoxColor(win,f1,f2)                                                                     'fenster vorder und hintergrundfarbe setzen
+        vga.printCursorColor(f1)
+        vga.printBoxSize(win,y+a, x+b, yy-c, xx-d)                                                       'virtuelles Fenster erstellen
+        posi:=win*14
+        wind[posi++]:=win
+        wind[posi++]:=modus
+        wind[posi++]:=x
+        wind[posi++]:=y
+        wind[posi++]:=xx
+        wind[posi++]:=yy
+        wind[posi++]:=f1
+        wind[posi++]:=f2
+        wind[posi++]:=f3
+        wind[posi++]:=f4
+        wind[posi++]:=f5
+        wind[posi++]:=f6
+        wind[posi++]:=f7
+        wind[posi++]:=f8
+
+pri Set_Titel_Status|win,Tit_Stat,len,posi,x,y                                                           'Titel-oder Statustext in einem Fenster setzen
+
+    win     :=bus_getchar                                                                                'fensternummer
+    Tit_Stat:=bus_getchar                                                                                'Titel oder Statustext
+    len     :=bus_getchar                                                                                'stringlänge
+
+    posi:=win*14
+    x:=wind[posi+2]
+
+    if (wind[posi+1]==3 or  wind[posi+1]==4 or  wind[posi+1]>5) and Tit_Stat==1 and wind[posi]
+       y:=wind[posi+3]              'Titeltext
+       bus_getstr_plot(posi,len, y, x+1,1,0)
+    elseif wind[posi+1]>6 and Tit_Stat==2 and wind[posi]
+       y:=wind[posi+5]           'Statustext
+       bus_getstr_plot(posi,len,y, x+1,1,2)
+    else
+       bus_getstr_plot(posi,len,y, x+1,0,0)                                                              'keine Bildschirmausgabe
+
+pri bus_getstr_plot(win,len,y,x,m,b)|c
+
+       repeat len
+              c:=bus_getchar
+              if x<wind[win+4] and m==1
+                 vga.displaytile(@tileset[c*16],wind[win+10+b],wind[win+11+b],wind[win+7], y, x++)
+              else
+                 next
+
+
+pri get_window|x,y,a,b,i,sd
+    sd:=0
+    if mouseshow and mouse.button(0)                                                                     'Mauspfeil anzeigen
+       x:=xpos>>4
+       y:=ypos>>4
+
+       repeat i from 1 to 7
+          b:=i*14
+          if wind[b]
+            a:=wind[b+1]                                                                                 'Art des Fensters
+
+            case a
+                 'Titelleiste linke und rechte obere ecke
+                 3,4,6,7,8:if x==wind[b+2] and y==wind[b+3]                                              'linke obere ecke
+                              sd:=1
+                           if x==wind[b+4] and y==wind[b+3]                                              'rechte obere ecke
+                              sd:=2
+                           if a==6 or a==8
+                              if x==wind[b+4] and y==wind[b+3]+1                                         'oberer pfeil
+                                 sd:=3
+                           if a==6
+                              if x==wind[b+4] and y==wind[b+5]                                           'unterer pfeil
+                                 sd:=4
+                           if a==8
+                              if x==wind[b+4] and y==wind[b+5]-1                                         'unterer pfeil
+                                 sd:=4
+
+                           if sd
+                              klick_action(x,y,sd,i)
+                              sd+=i*10                                                                   'Fensternummer*10+Button
+                              quit
+
+                 5:        if x==wind[b+4] and y==wind[b+3]                                              'oberer pfeil
+                              sd:=3
+                           if x==wind[b+4] and y==wind[b+5]                                              'unterer pfeil
+                              sd:=4
+                           if sd
+                              klick_action(x,y,sd,i)
+                              sd+=i*10                                                                   'Fensternummer*10+Button
+                              quit
+
+
+
+    bus_putchar(sd)
+
+pri klick_action(x,y,sd,w)|tinr,f1,f2,f3,ff,a
+    a:=w*14
+    f1:=wind[a+6]
+    f2:=wind[a+7]
+    ff:=wind[a+9]'f4
+    f3:=wind[a+10]'f5
+    case sd
+          1:tinr:=wint[8]'128
+          2:tinr:=wint[10]'129
+          3:tinr:=wint[11]'133
+          4:tinr:=wint[13]'131
+    vga.displaytile(@tileset[tinr*16],ff,f2,f1, y, x)                                                    'rechte obere ecke
+    repeat while mouse.button(0)                                                                         'warten, bis Maustaste losgelassen wird
+    if sd==1 or sd==2                                                                                    'Titelleistensymbole
+       vga.displaytile(@tileset[tinr*16],f2,f1,ff, y, x)                                                 'rechte obere ecke
+    else                                                                                                 'Pfeilsymbole
+       vga.displaytile(@tileset[tinr*16],f2,f1,ff, y, x)                                                 'normal darstellen
+
+pri Del_Window|wnr,i,a
+    i:=0
+    wnr:=bus_getchar
+    repeat 17                                                                                            'neue Tilewerte für die Fenster lesen
+        wint[i++]:=bus_getchar
+
+    if wnr==9
+       repeat i from 1 to 7
+              wind[i*10]:=0
+    else
+       a:=wnr*14
+       vga.del_win(wnr)
+       wind[a]:=0
+
+
+pri titel(y,x,xx,f1,f2,f3,ff)
+    vga.displaytile(@tileset[wint[8]*16],f2,f1,ff, y, x)                                                 'linke obere ecke
+
+    W_line(wint[9],x+1, y, xx-1,f2,f1,f3)
+    vga.displaytile(@tileset[wint[10]*16],f2,f1,ff, y, xx)                                               'rechte obere ecke
+
+pri status(y,x,xx,f1,f2,f3)
+    vga.displaytile(@tileset[wint[15]*16],f2,f1,f3, y, x)                                                'linke untere ecke
+
+    W_line(wint[14],x+1, y, xx-1,f2,f1,f3)
+    vga.displaytile(@tileset[wint[16]*16],f2,f1,f3, y, xx)                                               'rechte untere ecke
+
+pri W_line(tinr,x,y,xx,f1,f2,f3)|i
+    repeat i from x to xx
+          vga.displaytile(@tileset[tinr*16],f1,f2,f3, y, i)
+
+pri rahmen(y,x,yy,xx,modus,f1,f2,f3)|i
+    if modus==2 or modus==5
+       vga.displaytile(@tileset[wint[0]*16],f2,f1,f3, y, x)                                              'links oben
+       repeat i from x+1 to xx-1
+            vga.displaytile(@tileset[wint[1]*16],f2,f1,f3, y, i)                                         'oberer rand
+
+       vga.displaytile(@tileset[wint[2]*16],f2,f1,f3, y, xx)                                             'rechts oben
+
+    repeat i from y+1 to yy-1
+       vga.displaytile(@tileset[wint[7]*16],f2,f1,f3, i, x)                                              'linker rand
+       if modus==2 or modus==4 or modus==7
+          vga.displaytile(@tileset[wint[3]*16],f2,f1,f3, i, xx)                                          'rechter rand ohne pfeile
+       if modus==5 or modus==6 or modus==8
+          vga.displaytile(@tileset[wint[12]*16],f2,f1,f3, i, xx)                                         'rechter rand mit pfeilen
+
+    repeat i from x+1 to xx-1
+        vga.displaytile(@tileset[wint[5]*16],f2,f1,f3, yy, i)                                            'unterer rand
+    vga.displaytile(@tileset[wint[6]*16],f2,f1,f3, yy, x)                                                'linke untere ecke
+    vga.displaytile(@tileset[wint[4]*16],f2,f1,f3, yy, xx)                                               'rechte untere ecke
+
+pri pfeile(y,yy,xx,f1,f2,f3,modus)
+    if modus==6 or modus==8
+       y+=1
+    if modus==8
+       yy-=1
+    vga.displaytile(@tileset[wint[11]*16],f2,f1,f3, y, xx)
+    vga.displaytile(@tileset[wint[13]*16],f2,f1,f3, yy, xx)                                              'unterer pfeil
+
+
+pub Backup_Restore_Area(n)|x,y,xx,yy,a,b
+    x:=bus_getchar
+    y:=bus_getchar
+    xx:=bus_getchar
+    yy:=bus_getchar
+    repeat b from y to yy
+           repeat a from x to xx
+                  if n
+                     sub_putlong(vga.backup_chroma(a,b))
+                     sub_putword(vga.backup_luma(a,b))
+                  else
+                     vga.restore_chroma(a,b,sub_getlong)
+                     vga.restore_luma(a,b,sub_getword)
+
+pub mousebound
+    xbound :=sub_getlong
+    ybound:=sub_getlong
+    xxbound :=sub_getlong
+    yybound:=sub_getlong
+
+pub mouse_button(b)|i,knopf,xp,yp,c
+    knopf:=0
+    xp:=XPOS>>4
+    yp:=YPOS>>4
+    c:=mouse.button(b)
+    if mouse.button(0)                                                                                   'linke mousetaste gedrueckt?
+       repeat i from 1 to buttonbuff-1                                                                   'alle Buttonparameter durchsuchen
+          if bnumber[i]
+             if xp=>bx[i] and xp=< bxx[i] and yp==by[i]                                                  'abfrage auf Buttonposition
+                c:=i                                                                                     'gefunden !
+                quit
+    bus_putchar(c)                                                                                       'ansonsten 255 senden
+
+pub BoxSize|i,win,y,x,yy,xx
+        win:=bus_getchar
+        y:=bus_getchar
+        x:=bus_getchar
+        yy:=bus_getchar
+        xx:=bus_getchar
+        vga.printBoxSize(win,y,x,yy,xx)
+
+pub PrintBoxColor|w,v,h
+    w:=bus_getchar
+    v:=bus_getchar
+    h:=hintergr:=bus_getchar
+    vga.printBoxColor(w,v,h)                                                                             'fenster vorder und hintergrundfarbe setzen
+    vga.printCursorColor(v)                                                                            'Cursorfarbe setzen
+
+pub setpos(y,x)
+    y:=bus_getchar
+    x:=bus_getchar
+    vga.printat(y,x)
+
+PUB scrollup | lines,farbe,y,x,yy,xx,rate
+        lines:=bus_getchar
+        farbe:=bus_getchar
+        y    :=bus_getchar
+        x    :=bus_getchar
+        yy   :=bus_getchar
+        xx   :=bus_getchar
+        rate :=bus_getchar
+        vga.scrollup(lines,farbe,y,x,yy,xx,rate)                                                         'screen: scrollt den screen nach oben
+
+PUB scrolldown | lines,farbe,y,x,yy,xx,rate
+        lines:=bus_getchar                                                                               'screen: scrollt den screen nach unten
+        farbe:=bus_getchar
+        y    :=bus_getchar
+        x    :=bus_getchar
+        yy   :=bus_getchar
+        xx   :=bus_getchar
+        rate :=bus_getchar
+        vga.scrolldown(lines,farbe,y,x,yy,xx,rate)
+
+pub display3DBox|top,center,bott,y,x,yy,xx
+        top:=bus_getchar
+        center:=bus_getchar
+        bott:=bus_getchar
+        y    :=bus_getchar
+        x    :=bus_getchar
+        yy   :=bus_getchar
+        xx   :=bus_getchar
+
+        vga.display3DBox(top, center, bott, y,x,yy,xx)
+
+pub display3DFrame|top,center,bott,y,x,yy,xx
+        top:=bus_getchar
+        center:=bus_getchar
+        bott:=bus_getchar
+        y    :=bus_getchar
+        x    :=bus_getchar
+        yy   :=bus_getchar
+        xx   :=bus_getchar
+
+        vga.display3DFrame(top, center, bott, y,x,yy,xx)
+
+pub Get_Button_Param|number,y,x,xx
+        number:=bus_getchar
+        x    :=bus_getchar
+        y    :=bus_getchar
+        xx   :=bus_getchar
+
+        bx[number]    :=x
+        by[number]    :=y
+        bxx[number]   :=xx
+        bnumber[number]:=number
+
+pub destroy_Button|number
+    number:=bus_getchar
+    vga.display2DBox(hintergr,by[number],bx[number],by[number],bxx[number])
+    bnumber[number]:=0
+
+pub display2DBox|farbe,y,x,yy,xx,shd
+        farbe:=bus_getchar
+        y    :=bus_getchar
+        x    :=bus_getchar
+        yy   :=bus_getchar
+        xx   :=bus_getchar
+        shd  :=bus_getchar
+        if shd
+           vga.display2DBox($56,y+1,x+1,yy+1,xx+1)
+        vga.display2DBox(farbe,y,x,yy,xx)
+
+pub scrollString|rate,vorder,hinter,y,x,xx,i,len',dir
+    rate  :=bus_getchar
+    vorder:=bus_getchar
+    hinter:=bus_getchar
+    y     :=bus_getchar
+    x     :=bus_getchar
+    xx    :=bus_getchar
+    len   :=bus_getchar
+    i:=0
+    repeat len
+         byte[@strkette][i++]:=bus_getchar
+    vga.scrollstring(@strkette,rate, vorder, hinter, y, x, xx)
+    bytefill(@strkette,0,40)                                                                             'stringbuffer wieder loeschen
+
+pub displayTile|pcol,scol,tcol,y,x                                                                       'einzelnes Tile anzeigen
+     tnr:=bus_getchar
+    pcol:=bus_getchar
+    scol:=bus_getchar
+    tcol:=bus_getchar
+       y:=bus_getchar
+       x:=bus_getchar
+
+    vga.displaytile(@tileset[tnr*16],pcol,scol,tcol, y, x)
+
+pub loadtile|anzahl,i                                                                                    'Tileset in buffer laden
+
+    anzahl:=sub_getlong
+    repeat i from 0 to anzahl-1
+         tileset[i]:=sub_getlong
+
+pub mousepointer|i
+    repeat i from 0 to 15
+         mousetile[i]:=sub_getlong
+    vga.mouseCursorTile(@mousetile)
+
+pub displaypic|pcol,scol,tcol,y,x,ytile,xtile,xx,c                                                       'komplettes Tileset anzeigen
+            pcol:=bus_getchar
+            scol:=bus_getchar
+            tcol:=bus_getchar
+               y:=bus_getchar
+               x:=bus_getchar
+           ytile:=bus_getchar
+           xtile:=bus_getchar
+           xx:=x
+           c:=0
+     repeat ytile '9
+        repeat xtile '11
+
+          vga.displayTile(@tileset[c], pcol, scol, tcol, y, xx++)
+          c+=16
+        y++
+        xx:=x
+pub displaymouse |on,farbe,i
+    on:=bus_getchar
+    farbe:=bus_getchar
+    if on
+        vga.mouseCursorColor(farbe)
+        vga.mouseCursorTile(vga.displayCursor)
+        mouseshow :=1
+        repeat i from 0 to buttonbuff-1                                                                  'buttonanzahl zuruecksetzen
+             bnumber[i]:=0
+    else
+        vga.mouseCursorTile(0)
+        mouseshow :=0
+
+PUB line(x0, y0, x1, y1, frbe,dummy) | dX, dY, x, y, err, stp
+  result := ((||(y1 - y0)) > (||(x1 - x0)))
+  if(result)
+    swap(@x0, @y0)
+    swap(@x1, @y1)
+  if(x0 > x1)
+    swap(@x0, @x1)
+    swap(@y0, @y1)
+  dX := (x1 - x0)
+  dY := (||(y1 - y0))
+  err := (dX >> 1)
+  stp := ((y0 => y1) | 1)
+  y := y0
+  repeat x from x0 to x1
+    if(result)
+      vga.Plot(frbe,x,y)
+    else
+      vga.Plot(frbe,y,x)
+    err -= dY
+    if(err < 0)
+       y += stp
+       err += dX
+
+PRI swap(x, y)
+  result  := long[x]
+  long[x] := long[y]
+  long[y] := result
+
+con '************************************************ Spriteparameter **********************************************************
+pub Actor_Parameter|i
+
+  repeat 4
+      actor[i++]:=bus_getchar                                                                                  'tilenr1
+  action_x:=bus_getchar
+  action_y:=bus_getchar
+
+  vga.dispBackup(action_y, action_x,9)
+  vga.displaytile(@tileset[actor[0]*16],actor[1],actor[2],actor[3], action_y, action_x)
+  old_action_x:=action_x
+  old_action_y:=action_y
+
+pub Change_Backuptile|tinr,f1,f2,f3                                                                      'Backuptile unter dem Player ändern (für eingesammelte Items)
+
+    tinr:=bus_getchar
+    f1:=bus_getchar
+    f2:=bus_getchar
+    f3:=bus_getchar
+
+    vga.Change_Backup(@tileset[tinr*16],f1,f2,f3)
+
+pub Get_Actor_Pos|a
+    a:=bus_getchar
+    case a
+        1:bus_putchar(action_x)
+        2:bus_putchar(action_y)
+
+pub actorxy(k)|b
+
+     case k
+        action_key[0]:action_x--
+                      b:=1
+        action_key[1]:action_x++
+                      b:=1
+        action_key[2]:action_y--
+                      b:=1
+        action_key[3]:action_y++
+                      b:=1
+
+  if action_x<1
+     action_x:=0
+  if action_x>39
+     action_x:=39
+  if action_y<1
+     action_y:=0
+  if action_y>29
+     action_y:=29
+
+  if b==1
+     playermove
+
+pri playermove
+     vga.dispRestore(old_action_y, old_action_x,9)
+     vga.dispBackup(action_y, action_x,9)', farbe)
+     vga.displaytile(@tileset[actor[0]*16],actor[1],actor[2],actor[3], action_y, action_x)
+     old_action_x:=action_x
+     old_action_y:=action_y
+
+pub Sprite_Parameter|nur
+    nur:=bus_getchar
+    nur-=1
+    spritenr[nur]:=bus_getchar
+    spritenr[nur+8]:=bus_getchar
+    spritef1[nur]:=bus_getchar
+    spritef2[nur]:=bus_getchar
+    spritef3[nur]:=bus_getchar
+    sprite_dir[nur]:=bus_getchar                                                                         'richtung
+    sprite_start[nur]:=bus_getchar                                                                       'startposition
+    sprite_end[nur]:=bus_getchar                                                                         'endposition
+    sprite_x[nur]:=bus_getchar                                                                           'x
+    sprite_y[nur]:=bus_getchar                                                                           'y
+
+    vga.dispBackup(sprite_y[nur], sprite_x[nur],nur)
+    vga.displaytile(@tileset[spritenr[nur]*16],spritef1[nur],spritef2[nur],spritef3[nur], sprite_y[nur], sprite_x[nur])
+    sprite_old_y[nur]:=sprite_y[nur]
+    sprite_old_x[nur]:=sprite_x[nur]
+
+pub SpriteMove|nur
+    nur:=bus_getchar
+    case nur
+        0:Sprite_move:=0
+        1:Sprite_move:=1
+        2:Reset_Sprite
+pub get_block|a,b
+    a:=bus_getchar
+    b:=bus_getchar
+    block_tile[a]:=b
+
+pub Set_sprite_XY|num,vx,vy,p,b
+  if sp_alter==0                                                                                         'zweites Sprite-Tile
+     sp_alter:=8
+  else
+     sp_alter:=0                                                                                         'erstes Sprite-Tile
+
+  repeat num from 0 to 7
+
+       if spritenr[num]<175                                                                              'sprite belegt?
+          case sprite_dir[num]
+               1:sprite_x[num]--
+                 if sprite_x[num]<sprite_start[num]                                                      'startpos erreicht? dann richtung umkehren
+                    sprite_dir[num]:=2
+               2:sprite_x[num]++
+                 if sprite_x[num]>sprite_end[num]                                                        'endpos erreicht dann richtung umkehren
+                    sprite_dir[num]:=1
+               3:sprite_y[num]--
+                 if sprite_y[num]<sprite_start[num]                                                      'startpos erreicht? dann richtung umkehren
+                    sprite_dir[num]:=4
+               4:sprite_y[num]++
+                 if sprite_y[num]>sprite_end[num]                                                        'endpos erreicht dann richtung umkehren
+                    sprite_dir[num]:=3
+               5:'einfacher verfolgermodus
+                  vx:=(action_x-sprite_x[num])                                                           'Abstand zur Spielerfigur x-Richtung
+                  vy:=(action_y-sprite_y[num])                                                           'Abstand zur Spielerfigur y-Richtung
+
+                  if vy<0
+                        p:=((sprite_y[num]-1)*40)+sprite_x[num]
+                        b:=position(p)                                                                   'Überprüfung auf Blockade-Tile
+                        if b==0
+                           sprite_y[num]--
+                     if sprite_y[num]<1
+                        sprite_y[num]:=1
+                  if vy>0
+                        p:=((sprite_y[num]+1)*40)+sprite_x[num]
+                        b:=position(p)
+                        if b==0
+                           sprite_y[num]++
+                     if sprite_y[num]>29
+                        sprite_y[num]:=29
+                  if vx<0
+                        p:=(sprite_y[num]*40)+(sprite_x[num]-1)
+                        b:=position(p)
+                        if b==0
+                           sprite_x[num]--
+                     if sprite_x[num]<1
+                        sprite_x[num]:=1
+                  if vx>0
+                        p:=(sprite_y[num]*40)+(sprite_x[num]+1)
+                        b:=position(p)
+                        if b==0
+                           sprite_x[num]++
+                     if sprite_x[num]>29
+                        sprite_x[num]:=29
+          vga.dispRestore(sprite_old_y[num], sprite_old_x[num],num)
+          vga.dispBackup(sprite_y[num], sprite_x[num],num)
+          vga.displaytile(@tileset[spritenr[num+sp_alter]*16],spritef1[num],spritef2[num],spritef3[num], sprite_y[num], sprite_x[num])
+          sprite_old_x[num]:=sprite_x[num]
+          sprite_old_y[num]:=sprite_y[num]
+
+pub position(tr):bl|i,block
+    block:=read_block(tr)
+    bl:=0
+    repeat i from 0 to 9
+          if block==block_tile[i]
+             bl:=1
+
+pub read_block(num):wert|i
+    wert:=vga.getblock(num)
+    repeat i from 0 to 175                                                                               'Tiles im Tileset mit Wert vergleichen
+         if wert== @tileset[i*16]
+            quit
+
+pub Reset_Sprite|i
+    repeat i from 0 to 7
+           if spritenr[i]<177
+             vga.dispRestore(sprite_old_y[i], sprite_old_x[i],i)                                         'sprite reset
+             spritenr[i]:=255
+    vga.dispRestore(old_action_y, old_action_x,9)                                                        'Player reset
+    Sprite_move:=0                                                                                       'spritebewegung deaktivieren
+    collision:=0
+
+pub Set_Action_Key|i
+    repeat 5
+         action_key[i++]:=bus_getchar
+
+pub Displaypalette|farbe,hy,hx,a
+    hx:=bus_getchar
+    hy:=bus_getchar
+    a:=hx
+    farbe:=0
+    repeat 4
+        repeat 16
+             vga.plot(farbe,hy,hx)
+             hx++
+             farbe+=4
+        hx:=a
+        hy++
 
 DAT
 
@@ -944,271 +1208,9 @@ DAT
 '
 entry                   jmp     entry                   'just loops
 
-font byte $03,$04,$02,$01,$07,$00,$00,$00       ' 2  0
-     byte $0C,$08,$0B,$08,$00,$00,$00,$00       ' -1 1
-     byte $03,$04,$02,$04,$03,$00,$00,$00       '3 2
 
-     byte $18,$7C,$36,$7C,$D8,$D8,$7E,$18       '$ 3
-     byte $00,$63,$33,$18,$0C,$66,$63,$00       '% 4
-     byte $1C,$36,$1C,$6E,$3B,$33,$6E,$00       '& 5
-     byte $38,$30,$18,$00,$00,$00,$00,$00       ' ' 6
-     byte $18,$0C,$06,$06,$06,$0C,$18,$00       '( 7
-     byte $06,$0C,$18,$18,$18,$0C,$06,$00       ') 8
-     byte $00,$66,$3C,$FF,$3C,$66,$00,$00       '* 9
-     byte $00,$0C,$0C,$3F,$0C,$0C,$00,$00       '+ 10
-     byte $00,$00,$00,$00,$00,$38,$30,$18       ', 11
-     byte $00,$00,$00,$7F,$00,$00,$00,$00       '- 12
-     byte $00,$00,$00,$00,$00,$0C,$0C,$00       '. 13
-     byte $60,$30,$18,$0C,$06,$03,$01,$00       '/ 14
-     byte $3C,$7E,$FF,$FF,$FF,$FF,$7E,$3C       '• 15
+tileset  long 0[2816]
 
-     byte $00,$00,$08,$14,$22,$41,$7F,$00       'Δ 16
-     byte $00,$00,$3E,$14,$14,$14,$16,$00       'π 17
-     byte $3F,$21,$02,$04,$02,$21,$3F,$00       'Σ 18
-     byte $00,$3E,$63,$63,$36,$36,$77,$00       'Ω 19
-
-     byte $3F,$03,$1F,$30,$30,$33,$1E,$00       '5 20
-
-     byte $70,$10,$10,$16,$14,$1C,$18,$00       '√ 21
-
-     byte $3F,$33,$30,$18,$0C,$0C,$0C,$00       '7 22
-     byte $1E,$33,$33,$1E,$33,$33,$1E,$00       '8 23
-     byte $1E,$33,$33,$3E,$30,$18,$0E,$00       '9 24
-     byte $00,$00,$0C,$0C,$00,$0C,$0C,$00       ': 25
-     byte $00,$00,$0C,$0C,$00,$0C,$0C,$06       '; 26
-     byte $18,$0C,$06,$03,$06,$0C,$18,$00       '< 27
-     byte $00,$00,$3F,$00,$3F,$00,$00,$00       '= 28
-     byte $06,$0C,$18,$30,$18,$0C,$06,$00       '> 29
-     byte $1E,$33,$30,$18,$0C,$00,$0C,$00       '? 30
-     byte $3E,$63,$7B,$7B,$7B,$03,$1E,$00       '@ 31
-
-     byte $00,$00,$00,$00,$00,$00,$00,$00       'Space  32
-     byte $0C,$0C,$0C,$0C,$0C,$00,$0C,$00       '!      33
-     byte $EE,$CC,$66,$00,$00,$00,$00,$00       ' "     34
-     byte $6C,$6C,$7F,$36,$7F,$1B,$1B,$00       '# 35
-     byte $18,$7C,$36,$7C,$D8,$D8,$7E,$18       '$ 36
-     byte $00,$63,$33,$18,$0C,$66,$63,$00       '% 37
-     byte $1C,$36,$1C,$6E,$3B,$33,$6E,$00       '& 38
-     byte $38,$30,$18,$00,$00,$00,$00,$00       ' ' 39
-     byte $18,$0C,$06,$06,$06,$0C,$18,$00       '( 40
-     byte $06,$0C,$18,$18,$18,$0C,$06,$00       ') 41
-     byte $00,$66,$3C,$FF,$3C,$66,$00,$00       '* 42
-     byte $00,$0C,$0C,$3F,$0C,$0C,$00,$00       '+ 43
-     byte $00,$00,$00,$00,$00,$38,$30,$18       ', 44
-     byte $00,$00,$00,$7F,$00,$00,$00,$00       '- 45
-     byte $00,$00,$00,$00,$00,$0C,$0C,$00       '. 46
-     byte $60,$30,$18,$0C,$06,$03,$01,$00       '/ 47
-     byte $3E,$63,$73,$7B,$6F,$67,$3E,$00       '0 48
-     byte $0C,$0E,$0C,$0C,$0C,$0C,$3F,$00       '1 49
-     byte $1E,$33,$30,$1C,$06,$33,$3F,$00       '2 50
-     byte $3F,$18,$0C,$1E,$30,$33,$1E,$00       '3 51
-     byte $38,$3C,$36,$33,$7F,$30,$78,$00       '4 52
-     byte $3F,$03,$1F,$30,$30,$33,$1E,$00       '5 53
-     byte $1C,$06,$03,$1F,$33,$33,$1E,$00       '6 54
-     byte $3F,$33,$30,$18,$0C,$0C,$0C,$00       '7 55
-     byte $1E,$33,$33,$1E,$33,$33,$1E,$00       '8 56
-     byte $1E,$33,$33,$3E,$30,$18,$0E,$00       '9 57
-     byte $00,$00,$0C,$0C,$00,$0C,$0C,$00       ': 58
-     byte $00,$00,$0C,$0C,$00,$0C,$0C,$06       '; 59
-     byte $18,$0C,$06,$03,$06,$0C,$18,$00       '< 60
-     byte $00,$00,$3F,$00,$3F,$00,$00,$00       '= 61
-     byte $06,$0C,$18,$30,$18,$0C,$06,$00       '> 62
-     byte $1E,$33,$30,$18,$0C,$00,$0C,$00       '? 63
-     byte $3E,$63,$7B,$7B,$7B,$03,$1E,$00       '@ 64
-     byte $0C,$1E,$33,$33,$3F,$33,$33,$00       'A 65
-     byte $3F,$66,$66,$3E,$66,$66,$3F,$00       'B 66
-     byte $3C,$66,$03,$03,$03,$66,$3C,$00       'C 67
-     byte $1F,$36,$66,$66,$66,$36,$1F,$00       'D 68
-     byte $7F,$46,$16,$1E,$16,$46,$7F,$00       'E 69
-     byte $7F,$46,$16,$1E,$16,$06,$0F,$00       'F 70
-     byte $3C,$66,$03,$03,$73,$66,$3C,$00       'G 71
-     byte $33,$33,$33,$3F,$33,$33,$33,$00       'H 72
-     byte $1E,$0C,$0C,$0C,$0C,$0C,$1E,$00       'I 73
-     byte $78,$30,$30,$30,$33,$33,$1E,$00       'J 74
-     byte $67,$66,$36,$0E,$36,$66,$67,$00       'K 75
-     byte $0F,$06,$06,$06,$46,$66,$7F,$00       'L 76
-     byte $63,$77,$7F,$6B,$63,$63,$63,$00       'M 77
-     byte $63,$67,$6F,$7B,$73,$63,$63,$00       'N 78
-     byte $1C,$36,$63,$63,$63,$36,$1C,$00       'O 79
-     byte $3F,$66,$66,$3E,$06,$06,$0F,$00       'P 80
-     byte $1E,$33,$33,$33,$33,$3B,$1E,$38       'Q 81
-     byte $3F,$66,$66,$3E,$36,$66,$67,$00       'R 82
-     byte $3E,$63,$0F,$3C,$70,$63,$3E,$00       'S 83
-     byte $3F,$2D,$0C,$0C,$0C,$0C,$1E,$00       'T 84
-     byte $33,$33,$33,$33,$33,$33,$1E,$00       'U 85
-     byte $33,$33,$33,$1E,$1E,$0C,$0C,$00       'V 86
-     byte $63,$63,$63,$6B,$7F,$77,$63,$00       'W 87
-     byte $63,$63,$36,$1C,$36,$63,$63,$00       'X 88
-     byte $33,$33,$33,$1E,$0C,$0C,$1E,$00       'Y 89
-     byte $7F,$63,$31,$18,$4C,$66,$7F,$00       'Z 90
-     byte $3C,$0C,$0C,$0C,$0C,$0C,$3C,$00       '[ 91
-     byte $18,$18,$18,$18,$18,$18,$18,$00       '| 92
-     byte $3C,$30,$30,$30,$30,$30,$3C,$00       '] 93
-     byte $08,$1C,$36,$63,$00,$00,$00,$00       '^ 94
-     byte $00,$00,$00,$00,$00,$00,$00,$FF       '_ 95
-     byte $18,$18,$18,$18,$18,$18,$18,$18       '96    (162)
-     byte $00,$00,$1E,$30,$3E,$33,$6E,$00       'a 97
-     byte $07,$06,$3E,$66,$66,$66,$3B,$00       'b 98
-     byte $00,$00,$1E,$33,$03,$33,$1E,$00       'c 99
-     byte $38,$30,$3E,$33,$33,$33,$6E,$00       'd 100
-     byte $00,$00,$1E,$33,$3F,$03,$1E,$00       'e 101
-     byte $1C,$36,$06,$0F,$06,$06,$0F,$00       'f 102
-     byte $00,$00,$6E,$33,$33,$3E,$30,$1F       'g 103
-     byte $07,$06,$36,$6E,$66,$66,$67,$00       'h 104
-     byte $0C,$00,$0E,$0C,$0C,$0C,$3F,$00       'i 105
-     byte $30,$00,$38,$30,$30,$33,$33,$1E       'j 106
-     byte $07,$66,$36,$1E,$16,$36,$67,$00       'k 107
-     byte $0E,$0C,$0C,$0C,$0C,$0C,$3F,$00       'l 108
-     byte $00,$00,$33,$7F,$7F,$6B,$63,$00       'm 109
-     byte $00,$00,$1F,$33,$33,$33,$33,$00       'n 110
-     byte $00,$00,$1E,$33,$33,$33,$1E,$00       'o 111
-     byte $00,$00,$3B,$66,$66,$3E,$06,$0F       'p 112
-     byte $00,$00,$6E,$33,$33,$3E,$30,$78       'q 113
-     byte $00,$00,$3B,$6E,$66,$06,$0F,$00       'r 114
-     byte $00,$00,$3E,$03,$1E,$30,$1F,$00       's 115
-     byte $08,$0C,$3E,$0C,$0C,$2C,$18,$00       't 116
-     byte $00,$00,$33,$33,$33,$33,$6E,$00       'u 117
-     byte $00,$00,$33,$33,$33,$1E,$0C,$00       'v 118
-     byte $00,$00,$63,$6B,$7F,$7F,$36,$00       'w 119
-     byte $00,$00,$63,$36,$1C,$36,$63,$00       'x 120
-     byte $00,$00,$33,$33,$33,$3E,$30,$1F       'y 121
-     byte $00,$00,$3F,$19,$0C,$26,$3F,$00       'z 122
-     byte $80,$40,$40,$20,$40,$40,$80,$03       '{123
-     byte $10,$10,$10,$10,$10,$10,$10,$00       '|124
-     byte $01,$02,$02,$04,$02,$02,$01,$00       '}125
-     byte $00,$00,$00,$26,$19,$00,$00,$00       '~126
-     byte $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF       '‣127
-
-'############## Platz für Sonderzeichen KC87 Zeichensatz ######################
-     byte $03,$04,$08,$08,$08,$08,$04,$03       '128
-     byte $C0,$20,$10,$10,$10,$10,$20,$C0       '129
-     byte $81,$81,$42,$3C,$00,$00,$00,$00       '130
-     byte $00,$00,$00,$00,$3C,$42,$81,$81       '131
-     byte $08,$08,$04,$03,$00,$00,$00,$00       '132
-     byte $10,$10,$20,$C0,$00,$00,$00,$00       '133
-     byte $00,$00,$00,$00,$C0,$20,$10,$10       '134
-     byte $00,$00,$00,$00,$03,$04,$08,$08       '135
-     byte $01,$01,$01,$01,$01,$01,$01,$FF       '136
-     byte $FF,$80,$80,$80,$80,$80,$80,$80       '137
-     byte $00,$08,$14,$22,$41,$22,$14,$08       '138
-     byte $FF,$F7,$E3,$C1,$80,$C1,$E3,$F7       '139
-     byte $3C,$42,$81,$81,$81,$81,$42,$3C       '140
-     byte $C3,$81,$00,$00,$00,$00,$81,$C3       '141
-     byte $FF,$7F,$3F,$1F,$0F,$07,$03,$01       '142
-     byte $01,$03,$07,$0F,$1F,$3F,$7F,$FF       '143
-     byte $80,$40,$20,$10,$08,$04,$02,$01       '144
-     byte $01,$02,$04,$08,$10,$20,$40,$80       '145
-     byte $00,$00,$00,$00,$C0,$30,$0C,$03       '146
-     byte $C0,$30,$0C,$03,$00,$00,$00,$00       '147
-     byte $C0,$30,$0C,$03,$03,$0C,$30,$C0       '148
-     byte $00,$00,$00,$00,$03,$0C,$30,$C0       '149
-     byte $03,$0C,$30,$C0,$00,$00,$00,$00       '150
-     byte $03,$0C,$30,$C0,$C0,$30,$0C,$03       '151
-     byte $08,$08,$04,$04,$02,$02,$01,$01       '152
-     byte $80,$80,$40,$40,$20,$20,$10,$10       '153
-     byte $81,$81,$42,$42,$24,$24,$18,$18       '154
-     byte $01,$01,$02,$02,$04,$04,$08,$08       '155
-     byte $10,$10,$20,$20,$40,$40,$80,$80       '156
-     byte $18,$18,$24,$24,$42,$42,$81,$81       '157
-     byte $FF,$00,$00,$00,$00,$00,$00,$00       '158
-     byte $01,$01,$01,$01,$01,$01,$01,$01       '159
-     byte $00,$00,$00,$FF,$FF,$00,$00,$00       '160
-     byte $00,$00,$00,$00,$00,$00,$00,$00       'Cursor leer 161
-'     byte $18,$18,$18,$18,$18,$18,$18,$18       '162
-     byte $18,$18,$18,$FF,$FF,$00,$00,$00       '162
-     byte $18,$18,$18,$F8,$F8,$18,$18,$18       '163
-     byte $00,$00,$00,$FF,$FF,$18,$18,$18       '164
-     byte $18,$18,$18,$1F,$1F,$18,$18,$18       '165
-     byte $18,$18,$18,$FF,$FF,$18,$18,$18       '166
-     byte $18,$18,$18,$F8,$F8,$00,$00,$00       '167
-     byte $00,$00,$00,$F8,$F8,$18,$18,$18       '168
-     byte $00,$00,$00,$1F,$1F,$18,$18,$18       '169
-     byte $18,$18,$18,$1F,$1F,$00,$00,$00       '170
-     byte $01,$01,$01,$02,$02,$04,$18,$E0       '171
-     byte $80,$80,$80,$40,$40,$20,$18,$07       '172
-     byte $07,$18,$20,$40,$40,$80,$80,$80       '173
-     byte $E0,$18,$04,$02,$02,$01,$01,$01       '174
-     byte $81,$42,$24,$18,$18,$24,$42,$81       '175
-     byte $0F,$0F,$0F,$0F,$00,$00,$00,$00       '176
-     byte $F0,$F0,$F0,$F0,$00,$00,$00,$00       '177
-     byte $00,$00,$00,$00,$F0,$F0,$F0,$F0       '178
-     byte $00,$00,$00,$00,$0F,$0F,$0F,$0F       '179
-     byte $0F,$0F,$0F,$0F,$0F,$0F,$0F,$0F       '180
-     byte $F0,$F0,$F0,$F0,$F0,$F0,$F0,$F0       '181
-     byte $FF,$FF,$FF,$FF,$00,$00,$00,$00       '182
-     byte $00,$00,$00,$00,$FF,$FF,$FF,$FF       '183
-     byte $0F,$0F,$0F,$0F,$F0,$F0,$F0,$F0       '184
-     byte $F0,$F0,$F0,$F0,$0F,$0F,$0F,$0F       '185
-     byte $F0,$F0,$F0,$F0,$FF,$FF,$FF,$FF       '186
-     byte $0F,$0F,$0F,$0F,$FF,$FF,$FF,$FF       '187
-     byte $FF,$FF,$FF,$FF,$0F,$0F,$0F,$0F       '188
-     byte $FF,$FF,$FF,$FF,$F0,$F0,$F0,$F0       '189
-     byte $80,$C0,$E0,$F0,$F8,$FC,$FE,$FF       '190
-     byte $FF,$FE,$FC,$F8,$F0,$E0,$C0,$80       '191
-     byte $80,$80,$80,$80,$80,$80,$80,$80       '192
-     byte $FF,$01,$01,$01,$01,$01,$01,$01       '193
-     byte $FF,$01,$01,$39,$39,$39,$01,$01       '194
-     byte $FF,$FF,$FF,$E7,$E7,$FF,$FF,$FF       '195
-     byte $18,$3C,$7E,$3C,$18,$3C,$7E,$FF       '196
-     byte $FF,$00,$FF,$00,$FF,$00,$FF,$00       '197
-     byte $55,$55,$55,$55,$55,$55,$55,$55       '198
-     byte $55,$AA,$55,$AA,$55,$AA,$55,$AA       '199
-     byte $80,$80,$80,$80,$80,$80,$80,$FF       '200
-     byte $00,$08,$1C,$3E,$7F,$3E,$1C,$08       '201
-     byte $1C,$08,$49,$7F,$49,$08,$1C,$3E       '202
-     byte $00,$36,$7F,$7F,$7F,$3E,$1C,$08       '203
-     byte $08,$1C,$3E,$7F,$7F,$3E,$08,$3E       '204
-     byte $E7,$E7,$42,$FF,$FF,$42,$E7,$E7       '205
-     byte $DB,$FF,$DB,$18,$18,$DB,$FF,$DB       '206
-     byte $3C,$7E,$FF,$FF,$FF,$FF,$7E,$3C       '207
-     byte $03,$03,$00,$00,$00,$00,$00,$00       '208
-     byte $0C,$0C,$00,$00,$00,$00,$00,$00       '209
-     byte $30,$30,$00,$00,$00,$00,$00,$00       '210
-     byte $C0,$C0,$00,$00,$00,$00,$00,$00       '211
-     byte $00,$00,$03,$03,$00,$00,$00,$00       '212
-     byte $00,$00,$0C,$0C,$00,$00,$00,$00       '213
-     byte $00,$00,$30,$30,$00,$00,$00,$00       '214
-     byte $00,$00,$C0,$C0,$00,$00,$00,$00       '215
-     byte $00,$00,$00,$00,$03,$03,$00,$00       '216
-     byte $00,$00,$00,$00,$0C,$0C,$00,$00       '217
-     byte $00,$00,$00,$00,$30,$30,$00,$00       '218
-     byte $00,$00,$00,$00,$C0,$C0,$00,$00       '219
-     byte $00,$00,$00,$00,$00,$00,$03,$03       '220
-     byte $00,$00,$00,$00,$00,$00,$0C,$0C       '221
-     byte $00,$00,$00,$00,$00,$00,$30,$30       '222
-     byte $00,$00,$00,$00,$00,$00,$C0,$C0       '223
-     byte $00,$00,$00,$00,$00,$00,$F0,$F0       '224
-     byte $00,$00,$00,$00,$00,$00,$FC,$FC       '225
-     byte $00,$00,$00,$00,$00,$00,$FF,$FF       '226
-     byte $00,$00,$00,$00,$00,$00,$3F,$3F       '227
-     byte $00,$00,$00,$00,$00,$00,$0F,$0F       '228
-     byte $00,$00,$00,$00,$00,$00,$03,$03       '229
-     byte $00,$00,$00,$00,$03,$03,$03,$03       '230
-     byte $00,$00,$03,$03,$03,$03,$03,$03       '231
-     byte $03,$03,$03,$03,$03,$03,$03,$03       '232
-     byte $03,$03,$03,$03,$03,$03,$00,$00       '233
-     byte $03,$03,$03,$03,$00,$00,$00,$00       '234
-     byte $03,$03,$00,$00,$00,$00,$00,$00       '235
-     byte $0F,$0F,$00,$00,$00,$00,$00,$00       '236
-     byte $3F,$3F,$00,$00,$00,$00,$00,$00       '237
-     byte $FF,$FF,$00,$00,$00,$00,$00,$00       '238
-     byte $FC,$FC,$00,$00,$00,$00,$00,$00       '239
-     byte $F0,$F0,$00,$00,$00,$00,$00,$00       '240
-     byte $C0,$C0,$00,$00,$00,$00,$00,$00       '241
-     byte $C0,$C0,$C0,$C0,$00,$00,$00,$00       '242
-     byte $C0,$C0,$C0,$C0,$C0,$C0,$00,$00       '243
-     byte $C0,$C0,$C0,$C0,$C0,$C0,$C0,$C0       '244
-     byte $00,$00,$C0,$C0,$C0,$C0,$C0,$C0       '245
-     byte $00,$00,$00,$00,$C0,$C0,$C0,$C0       '246
-     byte $00,$00,$00,$00,$00,$00,$C0,$C0       '247
-     byte $00,$00,$00,$00,$00,$00,$00,$FF       '248
-     byte $00,$00,$00,$00,$00,$00,$FF,$FF       '249
-     byte $00,$00,$00,$00,$00,$FF,$FF,$FF       '250
-     byte $00,$00,$00,$00,$FF,$FF,$FF,$FF       '251
-     byte $00,$00,$00,$FF,$FF,$FF,$FF,$FF       '252
-     byte $00,$00,$FF,$FF,$FF,$FF,$FF,$FF       '253
-     byte $00,$FF,$FF,$FF,$FF,$FF,$FF,$FF       '254
-     byte $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF       '255
 
 
 DAT
