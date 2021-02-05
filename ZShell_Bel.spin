@@ -294,8 +294,6 @@ PUB main | zeichen,n,i,x,y ,speed,bs                             'chip: kommando
                                    collision:=0
         gc#BEL_GET_ACTOR_POS    : Get_Actor_Pos                                                                                 'Playerposition
         gc#BEL_SEND_BLOCK       : Get_Block                                                                                     'Tile lesen
-'        gc#BEL_FIRE_PARAM       : Fire_Parameter
-'        gc#BEL_FIRE             : Fire
         gc#BEL_DPL_PALETTE      : Displaypalette                                                                                'Farbpalette anzeigen
         gc#BEL_DEL_WINDOW       : Del_Window                                                                                    'Fensterparameter löschen
         gc#BEL_SET_TITELSTATUS  : Set_Titel_Status                                                                              'Titeltext oder Statustext in einem Fenster setzen

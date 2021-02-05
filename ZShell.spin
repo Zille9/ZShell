@@ -133,11 +133,9 @@ var
    long usermarker,basicmarker                                                'Dir-Marker-Puffer für Datei-und Verzeichnis-Operationen
 
    word filenumber                                                            'Anzahl der mit Dir gefundenen Dateien
-   byte xtiles[16]                                                            'xtiles fuer tilenr der Tile-Dateien       '
-   byte ytiles[16]                                                            'ytiles fuer tilenr der Tile-Dateien
 
    byte workdir[12]                                                           'aktuelles Verzeichnis
-   byte Pfadname[255]
+   'byte Pfadname[255]
    byte fileOpened,tline[linelen]                                             'File-Open-Marker,Eingabezeilen-Puffer,Sicherheitskopie für tline ->Input-Befehl
    byte cursor                                                                'cursor on/off
    byte win                                                                   'Fensternummer
@@ -160,7 +158,7 @@ dat
 
 '************************** Dateioperationen **************************************************************
    tok5  byte "OPEN", 0     ' OPEN " <file> ",<mode>                                        133 140    getestet
-   tok6  byte "TYPE", 0    ' TYPE <file> Dateiinhalt auf Bildschirm ausgeben                134 141    getestet
+   tok6  byte "TYPE", 0     ' TYPE <file> Dateiinhalt auf Bildschirm ausgeben               134 141    getestet
    tok7  byte "WRITE", 0    ' WRITE <"text"> :                                              135 142    getestet
    tok8  byte "CLOSE", 0    ' CLOSE                                                         136 143    getestet
    tok9  byte "DEL", 0      ' DELETE " <file> "                                             137 144    getestet
@@ -197,9 +195,9 @@ dat
 
 
 '************************* Bildschirmbefehle ***********************************************************************
-   tok37 byte "COLOUR",0       'Farbe setzen  1,2 Vordergrund,Hintergrund                    165 187    getestet
+   tok37 byte "COLOUR",0    'Farbe setzen  1,2 Vordergrund,Hintergrund                      165 187    getestet
    tok38 byte "CLS",0       'Bildschirm loeschen cursor oberste Zeile Pos1                  166 188    getestet
-   tok39 byte "HEX",0      'Ausgabe von Hexzahlen mit Print                               ' 167 235    getestet
+   tok39 byte "HEX",0       'Ausgabe von Hexzahlen mit Print                              ' 167 235    getestet
    tok40 byte "BNZ",0       'Ausgabe von Binärzahlen mit Print                              168 201    getestet
 
 
@@ -246,7 +244,7 @@ DAT
    tile          byte "Tile",0                                                  'tile-Verzeichnis
    adm           byte "adm.sys",0                                               'Administra-Treiber
    bel           byte "bel.sys",0
-   errortxt      byte "errors.txt",0                                            'Error-Texte
+   'errortxt      byte "errors.txt",0                                            'Error-Texte
    shelldir      byte "SHELL",0
    sysfont       byte "sysfontb.dat",0                                          'system-font
 
@@ -254,6 +252,8 @@ DAT
 
    windowtile byte 135,137,136,7,141,134,132,130,128,8,129,133,0,131,8,8,8      'Fenster-Tiles für WIN-Funktion im Modus 0
 
+   name1         byte "Shell",0
+   name2         byte "Zshell",0
 con'****************************************** Hauptprogramm-Schleife *************************************************************************************************************
 PUB main | sa
 
@@ -364,7 +364,7 @@ PRI close
    ios.sdunmount
 
 PRI mount|i
-     playerstatus
+     'playerstatus
      ios.sdmount
      activate_dirmarker(usermarker)
      if strsize(@workdir)>0
@@ -374,7 +374,8 @@ PRI mount|i
            i:=ios.sdchdir(@workdir)
            if i
               sysbeep
-              ios.print(string("Error!"))
+              ios.print(string("* Error! *"))
+              ios.printnl
               return i
         usermarker:=get_dirmarker
         return 0
@@ -382,7 +383,8 @@ PRI mount|i
 con '********************************** Fehler-und System-Texte in den eRam laden ****************************************************************************************************************
 pri errortext
     sysbeep
-    ios.print(string("Error !"))
+    ios.print(string("* Error ! *"))
+    ios.printnl
     abort
 
 PRI sysbeep
@@ -656,13 +658,15 @@ PRI scanFilename(f,kennung):chars| c
          byte[f++] := c
    byte[f] := 0
 
+
 PRI getstr:a|nt,b,str ,f                                                          'string in Anführungszeichen oder Array-String einlesen
     a:=0
     nt:=spaces
     bytefill(@font,0,STR_MAX)
     case nt
-         33..122:
-              scanfilename(@font,0)                                       'Zeichenkette in Anführungszeichen
+
+         32..122:
+              scanfilename(@font,44)                                            'Zeichenkette bis Komma
 
          154: skipspaces                                                        'Chr$-Funktion
               a:=klammer(1)
@@ -674,7 +678,7 @@ PRI getstr:a|nt,b,str ,f                                                        
 Pri Input_String
        getstr
        bytemove(@f0,@font,strsize(@font))                                       'string nach f0 kopieren
-       'ios.print(@f0)
+
 PRI clearstr
     bytefill(@font,0,STR_MAX)
     bytefill(@str0,0,STR_MAX)
@@ -1062,21 +1066,22 @@ PRI texec | ht, nt, restart,a,b,c,d,e,f,h,elsa,fvar,tab_typ
                 fileOpened := false
                 close
 
-             137: ' DELETE " <file>
+             137: ' DEL <file>
                 Input_String
                 mount
                 if ios.sddel(@f0)
                    errortext
                 close
 
-             138: ' REN " <file> "," <file> "
+             138: ' REN  <file> , <file>
                 Input_String
+                bytefill(@file1,32,11)
                 bytemove(@file1, @f0, strsize(@f0))                              'ergebnis vom ersten scanfilename in file1 merken
-                komma                                                            'fehler wenn komma fehlt
+                bytefill(@f0,0,STR_MAX)
                 Input_String
                 mount
                 if ios.sdrename(@file1,@f0)                                      'rename durchfuehren
-                    errortext                                                    'fehler wenn rename erfolglos
+                   errortext                                                     'fehler wenn rename erfolglos
                 close
 
              139:'CHDIR
@@ -1135,12 +1140,18 @@ PRI texec | ht, nt, restart,a,b,c,d,e,f,h,elsa,fvar,tab_typ
                  if ios.sdnewfile(@f0)
                     errortext
                  close
+
              165:'Colour <vordergr>,<hintergr>,<3.Color>(opt)
                  farbe:=expr(1)&255
                  komma
                  hintergr:=expr(1)&255
+                 komma
+                 farbe3:=expr(1)&255
                  ios.printboxcolor(win,farbe,hintergr)
                  ios.window(win,farbe,hintergr,farbe3,farbe3,farbe,hintergr,farbe3,white,0,0,29,39,7,0)
+                 ios.Set_Titel_Status(win,1,@zshell)
+                 Pfadname
+
 
              166: 'CLS
                  ios.printchar(12)
@@ -1221,7 +1232,8 @@ ifnot fehler
               ios.ram_wrbyte(c,adr++)                                           'und nach String-Array schreiben
        ios.ram_wrbyte(0,adr++)                                                  'Null-string-Abschluss
        pfadtiefe++
-
+    Pfadname
+pri Pfadname|adr,i,f,c
     adr:=VERZ_NAME
     i:=0
     f:=0
@@ -1543,6 +1555,7 @@ con '****************************************** Directory-Anzeige-Funktion *****
 PRI h_dir(z,modes,str) | stradr,n,i,dlen,dd,mm,jj,xstart,dr,ad,ps                 'hive: verzeichnis anzeigen
 {{h_dir - anzeige verzeichnis}}                                                 'mode 0=keine Anzeige,mode 1=einfache Anzeige, mode 2=erweiterte Anzeige
   ios.set_func(0,Cursor_Set)                                                    'cursor ausschalten
+  ios.printnl                                                                   'Leerzeile
   mount
   xstart:=ios.getx                                                              'Initial-X-Wert
   if strsize(str)<3
@@ -1674,7 +1687,7 @@ PRI LoadTiletoRam(datei)|adress ,count                       'tile:=tilenr,datei
 PRI loadtile|anzahl,adress                                             'tileset aus eram in bella laden
     Win_Set_Tiles
     adress:=TILE_RAM                                                            'naechster Tilebereich immer 2816 longs (11264 Bytes) 14 Tilesets moeglich
-    anzahl:=2816                                                                'anzahl tilebloecke
+    anzahl:=2816 '(xtiles*ytiles*64)/4                                          'anzahl tilebloecke in long
     ios.loadtilebuffer(adress,anzahl)                                           'laden
 
 DAT
