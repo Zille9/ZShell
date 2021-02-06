@@ -42,7 +42,6 @@ con
 _CLKMODE     = XTAL1 + PLL16X
 _XINFREQ     = 5_000_000
 
-   version   = 1.02
 
    fEof      = $FF                     ' dateiende-kennung
    linelen   = 40                      ' Maximum input line length
@@ -222,7 +221,7 @@ Dat '*************** Grafikparameter **************************
 DAT
    ext5          byte "*.*",0                                                   'alle Dateien anzeigen
    sysfont       byte "sysfontb.dat",0                                          'system-font
-   ZShell        byte "ZSHELL for Hive    ",0                                   'Programmname
+   ZShell        byte "ZSHELL for Hive V1.02  ",0                               'Programmname und Version
 
 
    FLASHROM      byte "Flash-Rom",0
@@ -230,6 +229,7 @@ DAT
    HUBRAM        byte "Hub-Ram  ",0
    LEER          byte "                    ",0
    windowtile byte 135,137,136,7,141,134,132,130,128,8,129,133,0,131,8,8,8      'Fenster-Tiles für WIN-Funktion im Modus 0
+
 
 
 con'****************************************** Hauptprogramm-Schleife *************************************************************************************************************
@@ -281,7 +281,7 @@ PRI init |pmark,newmark,x,y,i,f
      ios.set_func(win,Print_Window)
 
      ios.printchar(12)                                                             'cls
-     ios.Set_Titel_Status(win,1,@zshell)
+     ios.Set_Titel_Status(win,1,@zshell)                                           'Titel in Titelzeile
      ios.Set_Titel_Status(win,2,string("\"))
 
  '*************** Logo anzeigen **************************************
