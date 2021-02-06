@@ -307,6 +307,7 @@ PUB main | zeichen,n,i,x,y ,speed,bs                             'chip: kommando
         gc#BEL_BIGFONT          : vga.bigfont(bus_getchar)                                                                      'Umschaltung Fontsatz
 
 
+        gc#BMGR_GETSPEC     : mgr_getspec
         gc#BMGR_LOAD        : mgr_load                                                                   'neuen bellatrix-code laden
         'gc#BMGR_FLASHLOAD   : flash_loader
         gc#BMGR_GETCOGS     : mgr_getcogs                                                                'freie cogs abfragen
@@ -470,6 +471,10 @@ PUB mgr_getcogs: cogs |i,c,cog[8]                                               
       cogstop(cog[i])
   while i=>0
   bus_putchar(cogs)
+
+pub mgr_getspec
+
+  sub_putlong(CHIP_SPEC)
 
 PUB mgr_load|i                                          'cmgr: bellatrix-loader
 ''funktionsgruppe               : cmgr

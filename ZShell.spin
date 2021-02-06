@@ -130,7 +130,7 @@ _XINFREQ     = 5_000_000
 var
    long tp                                                                    'Kommandozeile
    long prm[10]                                                               'Befehlszeilen-Parameter-Feld (hier werden die Parameter der einzelnen Befehle eingelesen)
-   long usermarker,basicmarker                                                'Dir-Marker-Puffer für Datei-und Verzeichnis-Operationen
+   long usermarker                                                            'Dir-Marker-Puffer für Datei-und Verzeichnis-Operationen
 
    word filenumber                                                            'Anzahl der mit Dir gefundenen Dateien
 
@@ -241,19 +241,12 @@ Dat '*************** Grafikparameter **************************
 
 DAT
    ext5          byte "*.*",0                                                   'alle Dateien anzeigen
-   tile          byte "Tile",0                                                  'tile-Verzeichnis
-   adm           byte "adm.sys",0                                               'Administra-Treiber
-   bel           byte "bel.sys",0
-   'errortxt      byte "errors.txt",0                                            'Error-Texte
-   shelldir      byte "SHELL",0
    sysfont       byte "sysfontb.dat",0                                          'system-font
-
-   ZShell        byte "ZSHELL for Hive",0
+   ZShell        byte "ZSHELL for Hive",0                                       'Programmname
 
    windowtile byte 135,137,136,7,141,134,132,130,128,8,129,133,0,131,8,8,8      'Fenster-Tiles für WIN-Funktion im Modus 0
 
-   name1         byte "Shell",0
-   name2         byte "Zshell",0
+
 con'****************************************** Hauptprogramm-Schleife *************************************************************************************************************
 PUB main | sa
 
@@ -271,15 +264,12 @@ PRI init |pmark,newmark,x,y,i,f
   ios.start
   ios.sdmount                                                                   'SD-Karte Mounten
   activate_dirmarker(0)                                                         'in's Rootverzeichnis
-  ios.sdchdir(@shelldir)                                                        'in's Basicverzeichnis wechseln
-  basicmarker:= get_dirmarker                                                   'usermarker von administra holen
-  usermarker:=basicmarker
+  usermarker:=get_dirmarker
 
   FS.SetPrecision(6)                                                            'Präzision der Fliesskomma-Arithmetik setzen
   FL.Start
 '**************************************************************************************************************************************************************
 '*********************************** Startparameter ***********************************************************************************************************
-'  pauseTime := 0                                                                'pause wert auf 0
   fileOpened := 0                                                               'keine datei geoeffnet
   volume:=15                                                                    'sid-cog auf volle lautstaerke
   farbe:=green                                                                 'Schreibfarbe
@@ -319,7 +309,7 @@ PRI init |pmark,newmark,x,y,i,f
   ios.sid_resetregisters                                                           'SID Reset
   ios.sid_beep(1)
    '************ startparameter fuer Dir-Befehl *********************************************************************************************************
-  dzeilen:=30
+  dzeilen:=25
   xz     :=2
   yz     :=4
   modus  :=2                                                                       'Modus1=compact, 2=lang 0=unsichtbar
@@ -341,7 +331,7 @@ PRI ifexist(dateiname)                                                          
    mount
 
    if ios.sdopen("W",dateiname)==0                                              'existiert die dateischon?
-      ios.print(string("File exist! Overwrite? y/n"))                           '"File exist! Overwrite? y/n"    'fragen, ob ueberschreiben
+      ios.print(string("Datei vorhanden! ueberschreiben? y/n"))                           '"File exist! Overwrite? y/n"    'fragen, ob ueberschreiben
       if ios.keywait=="y"
          if ios.sddel(dateiname)                                                'wenn ja, alte Datei loeschen, bei nein ueberspringen
             close
@@ -364,7 +354,7 @@ PRI close
    ios.sdunmount
 
 PRI mount|i
-     'playerstatus
+     playerstatus
      ios.sdmount
      activate_dirmarker(usermarker)
      if strsize(@workdir)>0
@@ -374,7 +364,7 @@ PRI mount|i
            i:=ios.sdchdir(@workdir)
            if i
               sysbeep
-              ios.print(string("* Error! *"))
+              ios.print(string("* Fehler! *"))
               ios.printnl
               return i
         usermarker:=get_dirmarker
@@ -383,7 +373,7 @@ PRI mount|i
 con '********************************** Fehler-und System-Texte in den eRam laden ****************************************************************************************************************
 pri errortext
     sysbeep
-    ios.print(string("* Error ! *"))
+    ios.print(string("* Fehler ! *"))
     ios.printnl
     abort
 
@@ -487,16 +477,14 @@ PRI getline(laenge):e | i,f, c , x,y,t,m,a                                      
                            return
 
                        211:h_dir(dzeilen,2,@ext5)                               'F4 DIR aufrufen
-                       210:ios.print(string("PLEX-PING"))
+                       210:ios.print(string("I2C-SCAN"))                        'F3 I2C-Belegung
                            ios.printchar(13)
                            ping
-                           return                                                     'F3
-                       209:Getcogs                                              'F2 Cogs
                            return
-                       208:'repeat a from 46 to 57                               'Funktionstastenbelegung F1
-                           '   errortext'(a,0)
-                           '   ios.printnl
-                           'return
+                       209:Getcogs                                              'F2 freie Cogs
+                           return
+                       208:systeminfo                                           'Systeminformation F1
+                           return
 '**********************************************************************
                        13:Returnmarker:=1                                       'wenn return gedrueckt
                            ios.printnl
@@ -536,7 +524,7 @@ pri Getcogs|a,b,r,t
     r:=ios.reggetcogs
     t:=0
     ios.printchar(13)
-    ios.print(string("COG-Belegung:"))
+    ios.print(string("freie COG's:"))
     ios.printchar(13)
     ios.printchar(13)
     ios.print(String("Administra "))
@@ -597,18 +585,18 @@ pri systeminfo|f,b
     f:=ios.sdcheckfree/1024
     ios.printdec(f)
     ios.set_func(21,_setx)
-    ios.print(string(" KBytes"))
+    ios.print(string(" Kb"))
     ios.printnl
     ios.print(string("Speicher belegt:"))
     b:=ios.sdcheckused/1024
     ios.printdec(b)
     ios.set_func(21,_setx)
-    ios.print(string(" KBytes"))
+    ios.print(string(" Kb"))
     ios.printnl
     ios.print(string("Speicher gesamt:"))
     ios.printdec(f+b)
     ios.set_func(21,_setx)
-    ios.print(string(" KBytes"))
+    ios.print(string(" Kb"))
     ios.printnl
     mount
 
@@ -1032,7 +1020,7 @@ PRI texec | ht, nt, restart,a,b,c,d,e,f,h,elsa,fvar,tab_typ
                         b++
                      if b == 660
                         ios.printnl
-                        ios.print(string("<CONTINUE? */esc:>"))
+                        ios.print(string("<Weiter? */esc:>"))
                         if ios.keywait == 27
                            ios.printnl
                            quit
@@ -1611,20 +1599,20 @@ PRI h_dir(z,modes,str) | stradr,n,i,dlen,dd,mm,jj,xstart,dr,ad,ps               
  if modes                                                                         'sichtbare Ausgabe
     ios.printnl
     ios.printdec(n)                                                               'Anzahl Dateien
-    ios.print(string(" Files"))
+    ios.print(string(" Dateien"))
     ios.printnl
     n:=ios.sdcheckfree
     i:=ios.sdcheckused
     ios.printdec(i/1024)
     ad:=i*100/(i+n)
-    ios.print(string( " Kb used ("))
+    ios.print(string( " Kb belegt ("))
     ios.printdec(ad)
     ios.print(string("%),"))
     ios.printdec(n/1024)
-    ios.print(string( " Kb free"))
+    ios.print(string( " Kb frei"))
     ios.printnl
     ios.printdec((i+n)/1024)
-    ios.print(string( " Kb total "))
+    ios.print(string( " Kb gesamt "))
     ios.printnl
 
  ios.set_func(cursor,Cursor_Set)
@@ -1675,11 +1663,10 @@ PRI Win_Set_Tiles|i,a                                                           
 
 PRI LoadTiletoRam(datei)|adress ,count                       'tile:=tilenr,dateiname,xtile-zahl,ytilezahl
 
-    count:=16*11*64                                                       'anzahl zu ladender Bytes (16*11*16*4=11264)
+    count:=16*11*64                                                             'anzahl zu ladender Bytes (16*11*16*4=11264)
     adress:=TILE_RAM                                                            'naechster Tilebereich immer 2816 longs (11264 Bytes) 14 Tilesets moeglich Tileset15 ist der Systemfont
     mount
-    activate_dirmarker(basicmarker)                                             'ins Basic Stammverzeichnis
-    ios.sdchdir(@tile)                                                          'ins tile verzeichnis wechseln
+    activate_dirmarker(0)                                                       'ins Basic Stammverzeichnis
     ios.sdopen("R",datei)                                                        'datei öffnen
     ios.sdxgetblk(adress,count)                                                 'datei in den Speicher schreiben  (der blockbefehl ist viel schneller als der char-Befehl)
     close
