@@ -15,12 +15,19 @@ Eigenschaften   : -Komandozeilen-Prozessor mit mathematischen Fähigkeiten
 
 
 '############################################################ Version 1.0 ######################################################################################################
-31-02-2021      -Grundfunktionen vorhanden (Dateifunktionen, Commandoprozessor)
+31-01-2021      -Grundfunktionen vorhanden (Dateifunktionen, Commandoprozessor)
                 -grafische Cog-Anzeige (F2 oder Befehl Cogs)
                 -Befehl Ping zur Abfrage auf I2C Teilnehmer eingefügt
                 -4402 Longs frei
 
-
+06-02-2021      -Grafiktreiber geändert ->Tiletreiber von Trios-Basic
+                -Shellfenster geändert
+                -Farbschema geändert
+                -Pfadanzeige in Statusleiste
+                -Ram/Rom-Typ-Anzeige in Titelleiste bei DUMP
+                -Ren-Befehl war fehlerhaft (String wurde intern falsch verarbeitet) ->korrigiert
+                -überflüssige Funktionen entfernt
+                -4188 Longs frei
 
  --------------------------------------------------------------------------------------------------------- }}
 
@@ -35,7 +42,7 @@ con
 _CLKMODE     = XTAL1 + PLL16X
 _XINFREQ     = 5_000_000
 
-   version   = 1.01
+   version   = 1.02
 
    fEof      = $FF                     ' dateiende-kennung
    linelen   = 40                      ' Maximum input line length
@@ -60,35 +67,7 @@ _XINFREQ     = 5_000_000
 
    ADM_SPEC       = gc#A_FAT|gc#A_LDR|gc#A_SID|gc#A_RTC|gc#A_PLX'%00000000_00000000_00000000_11110011
 
-{'Farben im Mode1
 
-'Vordergrundfarben
-  vschwarz=0
-  vdunkelblau=1
-  vdunkelgruen=2
-  vblau=3
-  vGruen=4
-  vhellblau=5
-  vhellgruen=6
-  vTuerkis = 7
-  vrot=8
-  vlila=9
-  vorange=10
-  vpink=11
-  vteal=12
-  vhellgrau=13
-  vgelbgruen=14
-  vblaugruen=15
-
-'Hintergrundfarben
-  #1, HBlau
-  #2, HGruen
-  #3, HTuerkis
-  #4, HRot
-  #5, HLila
-  #6, HGelb
-  #7, HWeiss
-  }
   #$FC, Light_Grey, #$A8, Grey, #$54, Dark_Grey
   #$C0, Light_Red, #$80, Red, #$40, Dark_Red
   #$30, Light_Green, #$20, Green, #$10, Dark_Green
@@ -209,7 +188,7 @@ dat
    tok44 byte "DATE",0     'Datum abfragen                                                  172 205    getestet
 '**************************** diverse Funktionen *******************************************************************
    tok45 byte "COM",0                                                                     ' 173 243 *  getestet
-   tok46 byte "SID", 0       'SID_Soundbefehle                                              174 158    getestet
+   tok46 byte "SID", 0       'Frei                                                          174 158    getestet
    tok47 byte "PLAY", 0      'SID DMP-Player                                               '175 159    getestet
    tok48 byte "FLASH", 0     'Funktionen für Flash-Speicher                                '176 160    getestet
    tok49 byte "PORT",0       'Port-Funktionen      Port s,i,o,p                             177 207 *  getestet
@@ -278,9 +257,9 @@ PRI init |pmark,newmark,x,y,i,f
 '*********************************** Startparameter ***********************************************************************************************************
   fileOpened := 0                                                               'keine datei geoeffnet
   volume:=15                                                                    'sid-cog auf volle lautstaerke
-  farbe:=green                                                                 'Schreibfarbe
-  hintergr:=black                                                              'Hintergrundfarbe
-  farbe3:=Dark_Teal                                                             '3.Farbe
+  farbe:=light_orange                                                                 'Schreibfarbe
+  hintergr:=black                                                             'Hintergrundfarbe
+  farbe3:=orange                                                          '3.Farbe
 '***************************************************************************************************************************************************************
 
 '**************************************************************************************************************************************************************
@@ -398,7 +377,7 @@ con'**************************************** Basic-Zeile aus dem Speicher lesen 
 PRI doline(s) | c,i,xm
    i:=0
    returnmarker:=0
-   ios.print(string(">"))                                               'Promt ausgeben
+   ios.print(string(">"))                                                 'Promt ausgeben
 
    getline(0)                                                             'Zeile lesen und
 
@@ -429,7 +408,7 @@ PRI getline(laenge):e | i,f, c , x,y,t,m,a                                      
                               laenge--
                               i--
                               x--
-                              if laenge=>i                                      'dies Abfrage verhindert ein einfrieren bei laenge<1
+                              if laenge=>i                                      'diese Abfrage verhindert ein einfrieren bei laenge<1
                                  bytemove(@tline[i],@tline[i+1],laenge-i)
                                  tline[laenge]:=0
                                  ios.print(@tline[i])
@@ -443,18 +422,18 @@ PRI getline(laenge):e | i,f, c , x,y,t,m,a                                      
                               ios.printchar(2)                                  'Treiber 0 braucht das, um die Cursorposition zu aktualisieren
 
                        002:if i>0                                               'Pfeiltaste links
-                              ios.printchar(5)'printleft
+                              ios.printchar(5)                                  'printleft
                               i--
 
                        003:if i < linelen-1
-                              ios.printchar(6)'printright                       'Pfeiltaste rechts
+                              ios.printchar(6)                                  'printright 'Pfeiltaste rechts
                               i++
 
-                       162,7,5:repeat while i<laenge                            'Ende,Bild runter,Cursor runter-Taste ans ende der Basiczeile springen
-                                   ios.printchar(6)'printright
+                       005:repeat while i<laenge                                'Cursor runter-Taste ans ende der Basiczeile springen
+                                   ios.printchar(6)                             'printright
                                    i++
-                       160,6,4:repeat i                                         'POS1,Bild hoch,Cursor hoch-Taste an den Anfang der Basic-Zeile springen
-                                   ios.printchar(5)'printleft
+                       004:repeat i                                             'Cursor hoch-Taste an den Anfang der Basic-Zeile springen
+                                   ios.printchar(5)                             'printleft
                                i:=0
                        027:ios.printchar(13)                                    'Abbruchmarker
                            quit
@@ -480,7 +459,7 @@ PRI getline(laenge):e | i,f, c , x,y,t,m,a                                      
                            if(ios.flash_id)>0
                               ios.Dump(0,99999,2)                               'F7 Monitor Flash-Rom
                            else
-                              ios.print(string("Kein Flashspeicher installiert!"))
+                              ios.print(string("Kein Flash-Rom!"))
                            Show_Title(@leer)
                            return
 
@@ -502,7 +481,7 @@ PRI getline(laenge):e | i,f, c , x,y,t,m,a                                      
                            return
                        208:systeminfo                                           'Systeminformation F1
                            return
-'**********************************************************************
+
                        13:Returnmarker:=1                                       'wenn return gedrueckt
                            ios.printnl
                            tline[laenge] := 0                                   'statt i->laenge, so wird immer die komplette Zeile übernommen
@@ -572,8 +551,9 @@ pri CogShow(n)|t
          else
             ios.printboxcolor(win,red,hintergr)
          t++
-         ios.printchar(15)
+         ios.printqchar(9)
     ios.printchar(32)
+
 pri systeminfo|f,b
     ios.printnl
     ios.print(string("System-Information !"))
@@ -626,6 +606,7 @@ pri systeminfo|f,b
     Flash_Get
 
 Pri Flash_Get
+    bytefill(@f0,0,STR_MAX)
     hex(@f0,ios.flash_id,6)
     ios.print(@f0)
     if strcomp(@f0,string("1540EF"))
@@ -1368,6 +1349,7 @@ PRI PORT_Funktionen|function,a,b,c,x,y
                        ios.printdec(ios.getreg(a))
                        if ios.key==27
                           ios.set_func(cursor,Cursor_Set)
+                          ios.printnl
                           quit
             other:
                    errortext
@@ -1402,22 +1384,22 @@ PRI Flash_Funktionen|function,a,b
 
             "G"    :'Flash_ID                                                   'Flash-ID lesen
                     'a:=ios.flash_id
-                    hex(@f0,ios.flash_id,6)
-                    ios.print(@f0)
-                    if strcomp(@f0,string("1540EF"))
-                       ios.print(string(" 2MB - W25X16"))
-                    elseif strcomp(@f0,string("1640EF"))
-                       ios.print(string(" 4MB - W25X32"))
-                    elseif strcomp(@f0,string("1740EF"))
-                       ios.print(string(" 8MB - W25X64"))
-                    elseif strcomp(@f0,string("1840EF"))
-                       ios.print(string(" 16MB - W25X128"))
-                    ios.printnl
+                    'hex(@f0,ios.flash_id,6)
+                    'ios.print(@f0)
+                    'if strcomp(@f0,string("1540EF"))
+                    '   ios.print(string(" 2MB - W25X16"))
+                    'elseif strcomp(@f0,string("1640EF"))
+                    '   ios.print(string(" 4MB - W25X32"))
+                    'elseif strcomp(@f0,string("1740EF"))
+                    '   ios.print(string(" 8MB - W25X64"))
+                    'elseif strcomp(@f0,string("1840EF"))
+                    '   ios.print(string(" 16MB - W25X128"))
+                    'ios.printnl
 
             "R"    :'Flash-Size                                                 'Flashgröße lesen
-                    ios.printdec(ios.flashsize/1024)
-                    ios.print(string(" Kb"))
-                    ios.printnl
+                    'ios.printdec(ios.flashsize/1024)
+                    'ios.print(string(" Kb"))
+                    'ios.printnl
             "T"    :'klammerauf
                     'getstr
                     'ios.serstr(@font)
