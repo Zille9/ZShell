@@ -38,7 +38,7 @@ _XINFREQ     = 5_000_000
    version   = 1.01
 
    fEof      = $FF                     ' dateiende-kennung
-   linelen   = 85                      ' Maximum input line length
+   linelen   = 40                      ' Maximum input line length
    quote     = 34                      ' Double quote
    caseBit   = !32                     ' Uppercase/Lowercase bit
    point     = 46                      ' point
@@ -145,6 +145,7 @@ var
    byte str0[STR_MAX]                                                         'String fuer Fontfunktion in Fenstern
    byte font[STR_MAX]                                                         'Stringpuffer fuer Font-Funktion und str$-funktion
    byte f0[STR_MAX]                                                           'Hilfsstring
+   byte Titelzeile[STR_MAX]                                                   'String für die Titelzeile
    byte ADDA,PORT                                                             'Puffer der Portadressen der Sepia-Karte
    byte returnmarker
    byte Pfadtiefe                                                             'nummer des wievielten unterpfades
@@ -242,8 +243,13 @@ Dat '*************** Grafikparameter **************************
 DAT
    ext5          byte "*.*",0                                                   'alle Dateien anzeigen
    sysfont       byte "sysfontb.dat",0                                          'system-font
-   ZShell        byte "ZSHELL for Hive",0                                       'Programmname
+   ZShell        byte "ZSHELL for Hive    ",0                                   'Programmname
 
+
+   FLASHROM      byte "Flash-Rom",0
+   ERAM          byte "E-Ram    ",0
+   HUBRAM        byte "Hub-Ram  ",0
+   LEER          byte "                    ",0
    windowtile byte 135,137,136,7,141,134,132,130,128,8,129,133,0,131,8,8,8      'Fenster-Tiles für WIN-Funktion im Modus 0
 
 
@@ -318,6 +324,7 @@ PRI init |pmark,newmark,x,y,i,f
   ADDA:=$48                                                                        'Portadressen und AD-Adresse für Sepia-Karte vorbelegen
   PORT:=$38
   ios.set_plxAdr(ADDA,PORT)
+  bytemove(@Titelzeile,@zshell,strsize(@zshell))
 
 pri Mode_Ready
 
@@ -469,11 +476,21 @@ PRI getline(laenge):e | i,f, c , x,y,t,m,a                                      
                        217:
                        216:                                                     'F9
                        215:                                                     'F8
-                       214:                                                     'F7
-
-                       213:ios.Dump(0,99999,1)                                  'F6 Monitor E-Ram
+                       214:Show_Title(@Flashrom)
+                           if(ios.flash_id)>0
+                              ios.Dump(0,99999,2)                               'F7 Monitor Flash-Rom
+                           else
+                              ios.print(string("Kein Flashspeicher installiert!"))
+                           Show_Title(@leer)
                            return
-                       212:ios.Dump(0,99999,0)                                  'F5 Monitor Hub-Ram
+
+                       213:Show_Title(@ERAM)
+                           ios.Dump(0,99999,1)                                  'F6 Monitor E-Ram
+                           Show_Title(@leer)
+                           return
+                       212:Show_Title(@HUBRAM)
+                           ios.Dump(0,99999,0)                                  'F5 Monitor Hub-Ram
+                           Show_Title(@leer)
                            return
 
                        211:h_dir(dzeilen,2,@ext5)                               'F4 DIR aufrufen
@@ -516,6 +533,9 @@ PRI getline(laenge):e | i,f, c , x,y,t,m,a                                      
                                  tline[i++] :=c
                               if i>laenge
                                  laenge:=i                                                          'laenge ist immer die aktuelle laenge der zeile
+pri Show_Title(f)
+    bytemove(@titelzeile[strsize(@zshell)],f,strsize(f))
+    ios.Set_Titel_Status(win,1,@Titelzeile)
 
 pri Getcogs|a,b,r,t
 
@@ -555,7 +575,8 @@ pri CogShow(n)|t
          ios.printchar(15)
     ios.printchar(32)
 pri systeminfo|f,b
-    ios.print(string("System-Info !"))
+    ios.printnl
+    ios.print(string("System-Information !"))
     ios.printnl
     ios.print(string("Bellatrix :"))
     ios.printbin(ios.belgetspec,16)
@@ -598,7 +619,24 @@ pri systeminfo|f,b
     ios.set_func(21,_setx)
     ios.print(string(" Kb"))
     ios.printnl
-    mount
+    close
+    ios.printnl
+    ios.print(string("Flash-Rom:"))
+    ios.printnl
+    Flash_Get
+
+Pri Flash_Get
+    hex(@f0,ios.flash_id,6)
+    ios.print(@f0)
+    if strcomp(@f0,string("1540EF"))
+       ios.print(string(" 2MB - W25X16"))
+    elseif strcomp(@f0,string("1640EF"))
+       ios.print(string(" 4MB - W25X32"))
+    elseif strcomp(@f0,string("1740EF"))
+       ios.print(string(" 8MB - W25X64"))
+    elseif strcomp(@f0,string("1840EF"))
+       ios.print(string(" 16MB - W25X128"))
+    ios.printnl
 
 con '****************************** Basic-Token erzeugen **************************************************************************************************************************
 PRI tokenize | tok, c, at, put, state, i, j', ntoks
@@ -756,7 +794,8 @@ PRI factor | tok, a,b,c,d,e,g,f,fnum                                            
 
       173:'COM
            return Comfunktionen
-
+      176:'Flash
+           return Flash_Funktionen
       156:'sin
            return fl.sin(klammer(0))
       157:'cos
@@ -1167,7 +1206,7 @@ PRI texec | ht, nt, restart,a,b,c,d,e,f,h,elsa,fvar,tab_typ
                      quit
              173:'COM
                  Comfunktionen
-             176:'Flash_Funktionen
+             176:Flash_Funktionen
 
              175:'PLAY
                    'if is_string
@@ -1344,6 +1383,51 @@ pri ping|i,a,x,y,yt,n
                 ios.printchar(32)
                 ios.printdec(i)
                 ios.printchar(13)
+con'********************************************* Flsh-Funktionen *********************************************************************************************
+PRI Flash_Funktionen|function,a,b
+    function:=spaces&CaseBit
+    skipspaces
+        case function
+            "S"    :{klammerauf
+                    a:=expr(1)                                                  'serielle Schnittstelle öffnen/schliessen
+                    if a==1
+                       komma                                                    'wenn öffnen, dann Baudrate angeben
+                       b:=expr(1)
+                       ios.seropen(b)
+                    elseif a==0                                                 'Schnittstelle schliessen
+                       ios.serclose
+                    else
+                       errortext
+                    klammerzu}
+
+            "G"    :'Flash_ID                                                   'Flash-ID lesen
+                    'a:=ios.flash_id
+                    hex(@f0,ios.flash_id,6)
+                    ios.print(@f0)
+                    if strcomp(@f0,string("1540EF"))
+                       ios.print(string(" 2MB - W25X16"))
+                    elseif strcomp(@f0,string("1640EF"))
+                       ios.print(string(" 4MB - W25X32"))
+                    elseif strcomp(@f0,string("1740EF"))
+                       ios.print(string(" 8MB - W25X64"))
+                    elseif strcomp(@f0,string("1840EF"))
+                       ios.print(string(" 16MB - W25X128"))
+                    ios.printnl
+
+            "R"    :'Flash-Size                                                 'Flashgröße lesen
+                    ios.printdec(ios.flashsize/1024)
+                    ios.print(string(" Kb"))
+                    ios.printnl
+            "T"    :'klammerauf
+                    'getstr
+                    'ios.serstr(@font)
+                    'klammerzu
+            other:
+                   errortext
+PRI Hex(f,value,digits)
+  value <<= (8 - digits) << 2
+  repeat digits
+    byte[f++]:=lookupz((value <-= 4) & $F : "0".."9", "A".."F")
 
 con'********************************************* serielle Schnittstellen-Funktionen *********************************************************************************************
 PRI Comfunktionen|function,a,b
