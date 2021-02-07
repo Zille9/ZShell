@@ -164,16 +164,16 @@ detune          = 1.006
 
 
 OBJ
-                sdfat           : "adm-fat"        'fatengine 1Cog
-                sid1            : "sidcog"         'SIDCog    1Cog
+                sdfat           : "adm-fat"        'fatengine
+                sid1            : "sidcog"         'SIDCog
                 'sid2            : "sidcog"         'SIDCog
                 rtc             : "adm-rtc"
-                ser             : "RS232_ComEngine"          '1Cog
-                plx             : "adm-plx"                  '1Cog
+                ser             : "RS232_ComEngine"
+                plx             : "adm-plx"
                 gc              : "glob-con"
                 num             : "glob-numbers"   'Number Engine
                 signal          : "PropellerSignalGenerator"
-                flash           : "Winbond_Driver_neu"       '1Cog
+                flash           : "Winbond_Driver_neu"
 
 dat
 

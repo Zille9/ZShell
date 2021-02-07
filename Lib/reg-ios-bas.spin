@@ -671,10 +671,10 @@ pub wr_flashlong(adr,wert)
     bus_putlong1(adr)
     bus_putlong1(wert)
 
-pub sdtoflash(adr,count)
+pub sdtoflash(adr)',count)
     bus_putchar1(gc#a_sdtoflash)
     bus_putlong1(adr)
-    bus_putlong1(count)
+    'bus_putlong1(count)
 
 pub flxgetblk(adr,adr2,count)
     bus_putchar1(gc#a_RD_FlashBL)

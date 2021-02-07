@@ -775,8 +775,8 @@ PRI factor | tok, a,b,c,d,e,g,f,fnum                                            
 
       173:'COM
            return Comfunktionen
-      176:'Flash
-           return Flash_Funktionen
+      '176:'Flash
+      '     return Flash_Funktionen
       156:'sin
            return fl.sin(klammer(0))
       157:'cos
@@ -1366,44 +1366,80 @@ pri ping|i,a,x,y,yt,n
                 ios.printdec(i)
                 ios.printchar(13)
 con'********************************************* Flsh-Funktionen *********************************************************************************************
-PRI Flash_Funktionen|function,a,b
+PRI Flash_Funktionen|function,a,b,c,t,x,y,p
     function:=spaces&CaseBit
     skipspaces
         case function
-            "S"    :{klammerauf
-                    a:=expr(1)                                                  'serielle Schnittstelle öffnen/schliessen
-                    if a==1
-                       komma                                                    'wenn öffnen, dann Baudrate angeben
-                       b:=expr(1)
-                       ios.seropen(b)
-                    elseif a==0                                                 'Schnittstelle schliessen
-                       ios.serclose
-                    else
+            "S"    :bytefill(@f0,0,STR_MAX)
+                    Input_String                                                'Datei in Flash speichern - Eingabe Dateiname
+                    ios.print(@f0)
+                    tp--
+                    'ios.printchar(spaces)
+                    komma
+                    a:=expr(1)                                                  'an Adresse
+                    mount
+                    if ios.sdopen("R",@f0)                                      'Fehler beim öffnen?
                        errortext
-                    klammerzu}
+                    else
+                       b:=ios.sdfattrib(0)                                      'Dateigrösse ermitteln, daraus ergib sich die Anzahl der Speicherzellen
+                       c:=b/4096                                                   'Anzahl 4K Blöcke
+                       ios.print(string("loesche Flashbereich "))
+                       ios.printhex(a,8)
+                       ios.printchar(45)
+                       ios.printhex(a+b,8)
+                       p:=a                                                     'adresse sichern
+                       repeat c
+                              ios.erase_flash_data(a)
+                              a+=4096
+                              ios.printchar(point)
+                       ios.print(string("schreibe Flashbereich "))
+                       waitcnt(clkfreq+cnt)
+                       t:=0
+                       ios.SET_FlashAdress(p)
+                       repeat b
+                             ios.PUT_FlashByte(ios.sdgetc)
+                             t++
+                             if t==4096
+                                ios.printchar(point)
+                                t:=0
 
-            "G"    :'Flash_ID                                                   'Flash-ID lesen
-                    'a:=ios.flash_id
-                    'hex(@f0,ios.flash_id,6)
-                    'ios.print(@f0)
-                    'if strcomp(@f0,string("1540EF"))
-                    '   ios.print(string(" 2MB - W25X16"))
-                    'elseif strcomp(@f0,string("1640EF"))
-                    '   ios.print(string(" 4MB - W25X32"))
-                    'elseif strcomp(@f0,string("1740EF"))
-                    '   ios.print(string(" 8MB - W25X64"))
-                    'elseif strcomp(@f0,string("1840EF"))
-                    '   ios.print(string(" 16MB - W25X128"))
-                    'ios.printnl
+                    ios.printnl
+                    close
 
-            "R"    :'Flash-Size                                                 'Flashgröße lesen
-                    'ios.printdec(ios.flashsize/1024)
-                    'ios.print(string(" Kb"))
-                    'ios.printnl
-            "T"    :'klammerauf
-                    'getstr
-                    'ios.serstr(@font)
-                    'klammerzu
+
+
+
+
+
+
+            "L"    :'Flash_Datei starten                                          'Flash-Datei laden und starten
+                    a:=expr(1)
+
+
+            "E"    :'Flash löschen                                                'Flash-Löschen (entweder adressbereich oder alles)
+                     ios.print(string("Flash loeschen, fortfahren?"))
+                     if ios.keywait=="j"
+                        ios.printnl
+                        ios.print(string("loesche gesamten Flash-Rom!"))
+                        a:=ios.flashsize/4096                                        'Flashgrösse in 4K Blöcken
+                        b:=0
+                        x:=ios.getx
+                        y:=ios.gety
+                        t:=0
+                        p:=0
+                        repeat a
+                               ios.erase_flash_data(b)
+                               b+=4096
+                               t++
+                               if t==64
+                                  t:=0
+                                  p++
+                                  ios.setpos(y,x)
+                                  ios.printdec(p*100/64)
+                                  ios.printchar(37)                                  'Prozent
+                        ios.printnl
+
+
             other:
                    errortext
 PRI Hex(f,value,digits)
