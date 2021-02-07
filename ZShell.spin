@@ -29,6 +29,16 @@ Eigenschaften   : -Komandozeilen-Prozessor mit mathematischen Fähigkeiten
                 -überflüssige Funktionen entfernt
                 -4188 Longs frei
 
+07-02-2021      -Unterstützung von Flash-Rom an Administra hinzugefügt
+                -schreiben, löschen und starten von Programmen aus dem Flash
+                -Regflash wurde für Flash geändert und ist zur Verwendung des Flash-Roms zwingend in Regnatix zu flashen
+                -einige optische Anpassungen
+                -Dump-Anzeige angepasst, damit die Darstellung auf den Bildschirm passt
+                -OPEN, CLOSE,WRITE,FILE,XBUS deaktiviert - keine Ahnung, ob ich die wieder rein nehme
+                -Zeilenlänge auf 35 gekürzt - das sollte locker reichen
+                -es fehlt noch die Aktualisierung der Flashliste im Ram und Rom
+                -4043 Longs frei
+
  --------------------------------------------------------------------------------------------------------- }}
 
 obj
@@ -44,7 +54,7 @@ _XINFREQ     = 5_000_000
 
 
    fEof      = $FF                     ' dateiende-kennung
-   linelen   = 40                      ' Maximum input line length
+   linelen   = 35                      ' Maximum input line length
    quote     = 34                      ' Double quote
    caseBit   = !32                     ' Uppercase/Lowercase bit
    point     = 46                      ' point
@@ -56,12 +66,7 @@ _XINFREQ     = 5_000_000
    FLIST_RAM = $0 '....$1FFF           ' Flash-Liste 32kb
    VERZ_NAME = $2000 '....$20FF        ' Verzeichnis-Tiefenspeicher
    TILE_RAM  = $40000 '....$667FF      ' hier beginnt der Tile-Speicher fuer 14 Tiledateien(Modus0) oder 8 BMP-Bilder(Modus4)
-   SYS_FONT  = $66800 '....$693FF      ' ab hier liegt der System-Font 11kb
-   MOUSE_RAM = $69400 '....$6943F      ' User-Mouse-Pointer 64byte
    WTILE_RAM= $7E500 '.... $7E9FF      ' Win-Tile Puffer hier können die Tiles, aus denen die Fenster gebaut werden geändert werden
-
-   SMARK_RAM = $7FFF2                  ' Flag für übergebenen Startparameter Wert = 222
-
 
 
    ADM_SPEC       = gc#A_FAT|gc#A_LDR|gc#A_SID|gc#A_RTC|gc#A_PLX'%00000000_00000000_00000000_11110011
@@ -113,8 +118,7 @@ var
    word filenumber                                                            'Anzahl der mit Dir gefundenen Dateien
 
    byte workdir[12]                                                           'aktuelles Verzeichnis
-   'byte Pfadname[255]
-   byte fileOpened,tline[linelen]                                             'File-Open-Marker,Eingabezeilen-Puffer,Sicherheitskopie für tline ->Input-Befehl
+   byte tline[linelen]                                                        'File-Open-Marker,Eingabezeilen-Puffer,Sicherheitskopie für tline ->Input-Befehl
    byte cursor                                                                'cursor on/off
    byte win                                                                   'Fensternummer
    byte farbe,hintergr,farbe3                                                 'vorder,hintergrundfarbe,Rahmenfarbe
@@ -130,77 +134,72 @@ var
    byte Flash_vorhanden                                                       'Flash_Marker
 
 dat
-   tok0  byte "?",0        ' PRINT                                                         '128 131    getestet
-   tok1  byte "DUMP", 0    ' Speicher-Monitor <startadress>,<0..1> (0 Hram,1 Eram)          129 186    getestet
-   tok2  byte "PEEK",0      'Byte aus Speicher lesen momentan nur eram                      130 215    getestet
-   tok3  byte "POKE",0      'Byte in Speicher schreiben momentan nur eram                   131 208    getestet
-   tok4  byte "INFO",0      'Systeminfo                                                     132 217    getestet
+   tok0  byte "?",0        ' PRINT                                                         '128     getestet
+   tok1  byte "DUMP", 0    ' Speicher-Monitor <startadress>,<0..1> (0 Hram,1 Eram)          129     getestet
+   tok2  byte "PEEK",0      'Byte aus Speicher lesen momentan nur eram                      130     getestet
+   tok3  byte "POKE",0      'Byte in Speicher schreiben momentan nur eram                   131     getestet
+   tok4  byte "INFO",0      'Systeminfo                                                     132     getestet
 
 '************************** Dateioperationen **************************************************************
-   tok5  byte "OPEN", 0     ' OPEN " <file> ",<mode>                                        133 140    getestet
-   tok6  byte "TYPE", 0     ' TYPE <file> Dateiinhalt auf Bildschirm ausgeben               134 141    getestet
-   tok7  byte "WRITE", 0    ' WRITE <"text"> :                                              135 142    getestet
-   tok8  byte "CLOSE", 0    ' CLOSE                                                         136 143    getestet
-   tok9  byte "DEL", 0      ' DELETE " <file> "                                             137 144    getestet
-   tok10 byte "REN", 0      ' RENAME " <file> "," <file> "                                  138 145    getestet
-   tok11 byte "CHDIR",0      ' Verzeichnis wechseln                                          139 230    getestet      kann nicht CD heissen, kollidiert sonst mit Hex-Zahlen-Auswertung in getanynumber
-   tok12 byte "DIR", 0      ' dir anzeige                                                   140 146    getestet      NICHT AENDERN Funktionstaste!!
-   tok13 byte "ALOAD", 0     'ALOAD "<file>"  Administra-Code laden                         141 147    getestet      NICHT AENDERN Funktionstaste!!
-   tok14 byte "BLOAD", 0    ' BLOAD "<file>"  Bellatrix-Code laden                          142 148    getestet      NICHT AENDERN Funktionstaste!!
-   tok15 byte "FILE", 0     ' FILE wert aus datei lesen oder in Datei schreiben             143 182    getestet
-   tok16 byte "GFILE",0     ' GETFILE rueckgabe der mit Dir gefundenen Dateien ,Dateinamen  144 152    getestet
-   tok17 byte "MKDIR",0     ' Verzeichnis erstellen                                         145 206    getestet
-   tok18 byte "GATTR",0     ' Dateiattribute auslesen                                       146 240    getestet
-   tok19 byte "LOAD",0       'Regnatix Datei laden                                          147 218    getestet
-   tok20 byte "MKFILE", 0    'Datei erzeugen                                                148 185    getestet
+   tok5  byte "OPEN", 0     ' ********* Frei *********                                      133     getestet
+   tok6  byte "TYPE", 0     ' TYPE <file> Dateiinhalt auf Bildschirm ausgeben               134     getestet
+   tok7  byte "WRITE", 0    ' ********* Frei *********                                      135     getestet
+   tok8  byte "CLOSE", 0    ' ********* Frei *********                                      136     getestet
+   tok9  byte "DEL", 0      ' DELETE " <file> "                                             137     getestet
+   tok10 byte "REN", 0      ' RENAME " <file> "," <file> "                                  138     getestet
+   tok11 byte "CHDIR",0      ' Verzeichnis wechseln                                         139     getestet    kann nicht CD heissen, kollidiert sonst mit Hex-Zahlen-Auswertung in getanynumber
+   tok12 byte "DIR", 0      ' dir anzeige                                                   140     getestet
+   tok13 byte "ALOAD", 0     'ALOAD "<file>"  Administra-Code laden                         141     getestet
+   tok14 byte "BLOAD", 0    ' BLOAD "<file>"  Bellatrix-Code laden                          142     getestet
+   tok15 byte "FILE", 0     ' ********* Frei *********                                      143     getestet
+   tok16 byte "GFILE",0     ' ********* Frei *********                                      144     getestet
+   tok17 byte "MKDIR",0     ' Verzeichnis erstellen                                         145     getestet
+   tok18 byte "GATTR",0     ' Dateiattribute auslesen                                       146     getestet
+   tok19 byte "LOAD",0       'Regnatix Datei laden                                          147     getestet
+   tok20 byte "MKFILE", 0    'Datei erzeugen                                                148     getestet
 
 '************************* logische Operatoren **********************************************************************
-   tok21 byte "NOT" ,0      ' NOT <logical>                                                '149 139    getestet
-   tok22 byte "AND" ,0      ' <logical> AND <logical>                                      '150    getestet
-   tok23 byte "OR", 0       ' <logical> OR <logical>                                       '151    getestet
+   tok21 byte "NOT" ,0      ' NOT <logical>                                                '149     getestet
+   tok22 byte "AND" ,0      ' <logical> AND <logical>                                      '150     getestet
+   tok23 byte "OR", 0       ' <logical> OR <logical>                                       '151     getestet
 '************************* mathematische Funktionen *****************************************************************
-   tok24 byte "RND", 0       'Zufallszahl von x                                            '152 139    getestet
-   tok25 byte "PI",0         'Kreiszahl PI                                                 '153 174    getestet
-   tok26 byte "CHR$",0       'CHR$                                                          154 211    getestet
-   tok27 byte "ABS",0        'Frei                                  '                       155 245    getestet
-   tok28 byte "SIN",0                                                                     ' 156 246    getestet
-   tok29 byte "COS",0                                                                     ' 157 247    getestet
-   tok30 byte "TAN",0                                                                  '    158 248    getestet
-   tok31 byte "ATN",0                                                                     ' 159 249    getestet
-   tok32 byte "LN",0                                                                   '    160 250    getestet
-   tok33 byte "SGN",0        'Frei                                                      '   161 251    getestet
-   tok34 byte "SQR",0                                                                   '   162 252    getestet
-   tok35 byte "EXP",0                                                                  '    163 253    getestet
-   tok36 byte "INT",0        'Frei                                                        ' 164 254    getestet
-
-
+   tok24 byte "RND", 0       'Zufallszahl von x                                            '152     getestet
+   tok25 byte "PI",0         'Kreiszahl PI                                                 '153     getestet
+   tok26 byte "CHR$",0       'CHR$                                                          154     getestet
+   tok27 byte "ABS",0        '********* Frei *********              '                       155     getestet
+   tok28 byte "SIN",0                                                                     ' 156     getestet
+   tok29 byte "COS",0                                                                     ' 157     getestet
+   tok30 byte "TAN",0                                                                  '    158     getestet
+   tok31 byte "ATN",0                                                                     ' 159     getestet
+   tok32 byte "LN",0                                                                   '    160     getestet
+   tok33 byte "SGN",0        '********* Frei *********                                  '   161     getestet
+   tok34 byte "SQR",0                                                                   '   162     getestet
+   tok35 byte "EXP",0                                                                  '    163     getestet
+   tok36 byte "INT",0        '********* Frei *********                                    ' 164     getestet
 '************************* Bildschirmbefehle ***********************************************************************
-   tok37 byte "COLOUR",0    'Farbe setzen  1,2 Vordergrund,Hintergrund                      165 187    getestet
-   tok38 byte "CLS",0       'Bildschirm loeschen cursor oberste Zeile Pos1                  166 188    getestet
-   tok39 byte "HEX",0       'Ausgabe von Hexzahlen mit Print                              ' 167 235    getestet
-   tok40 byte "BNZ",0       'Ausgabe von Binärzahlen mit Print                              168 201    getestet
-
-
+   tok37 byte "COLOUR",0    'Farbe setzen  1,2 Vordergrund,Hintergrund                      165     getestet
+   tok38 byte "CLS",0       'Bildschirm loeschen cursor oberste Zeile Pos1                  166     getestet
+   tok39 byte "HEX",0       'Ausgabe von Hexzahlen mit Print                              ' 167     getestet
+   tok40 byte "BNZ",0       'Ausgabe von Binärzahlen mit Print                              168     getestet
 '************************* Datum und Zeit funktionen ***************************************************************
-   tok41 byte "STIME",0    'Stunde:Minute:Sekunde setzen ->                                 169 198    getestet
-   tok42 byte "SDATE",0    'Datum setzen                                                    170 199    getestet
-   tok43 byte "TIME",0     'Zeit   abfragen                                                 171 204    getestet
-   tok44 byte "DATE",0     'Datum abfragen                                                  172 205    getestet
+   tok41 byte "STIME",0    'Stunde:Minute:Sekunde setzen ->                                 169     getestet
+   tok42 byte "SDATE",0    'Datum setzen                                                    170     getestet
+   tok43 byte "TIME",0     'Zeit   abfragen                                                 171     getestet
+   tok44 byte "DATE",0     'Datum abfragen                                                  172     getestet
 '**************************** diverse Funktionen *******************************************************************
-   tok45 byte "COM",0                                                                     ' 173 243 *  getestet
-   tok46 byte "SID", 0       'Frei                                                          174 158    getestet
-   tok47 byte "PLAY", 0      'SID DMP-Player                                               '175 159    getestet
-   tok48 byte "FLASH", 0     'Funktionen für Flash-Speicher                                '176 160    getestet
-   tok49 byte "PORT",0       'Port-Funktionen      Port s,i,o,p                             177 207 *  getestet
-   tok50 byte "JOY",0        'Joystick abfragen für 2 Joysticks                             178 183    getestet
-   tok51 byte "XBUS",0       'Zugriff auf System-Funktionen                                 179 234    getestet
-   tok52 byte "COGS",0        'Cog-Anzeige                                                 '180 170
+   tok45 byte "COM",0                                                                     ' 173  *  getestet
+   tok46 byte "SID", 0       '********* Frei *********                                      174     getestet
+   tok47 byte "PLAY", 0      'SID DMP-Player                                               '175     getestet
+   tok48 byte "FLASH", 0     'Funktionen für Flash-Speicher                                '176     getestet
+   tok49 byte "PORT",0       'Port-Funktionen      Port s,i,o,p                             177  *  getestet
+   tok50 byte "JOY",0        'Joystick abfragen für 2 Joysticks                             178     getestet
+   tok51 byte "XBUS",0       'Zugriff auf System-Funktionen                                 179     getestet
+   tok52 byte "COGS",0        'Cog-Anzeige                                                 '180
    tok53 byte "PING",0       'Plexbus-Ping                                                 '181
    tok54 byte "ASC",0        'Zeichen in ASCII Code umwandeln                               182
    tok55 byte "REBOOT",0     'Hive Reboot                                                   183
 '******************************************************************************************************************
 
-'******************************************************************************************************************
 
    toks  word @tok0, @tok1, @tok2, @tok3, @tok4, @tok5, @tok6, @tok7
          word @tok8, @tok9, @tok10, @tok11, @tok12, @tok13, @tok14, @tok15
@@ -214,10 +213,6 @@ Dat '*************** Grafikparameter **************************
 
    GmodeLine byte 39  'Spaltenanzahl-1 der Treiber
    Gmodey byte 31     'Zeilenanzahl-1 der Treiber
-   gmodexw word 320 'x-weite des Treibers
-   gmodeyw word 256 'y-weite des Treibers
-   gmodepicsize word 10240 'Bildgröße
-   gmodeoffset word 10240 'Speicheroffset für letzte Bild-Zeile
 
 DAT
    ext5          byte "*.*",0                                                   'alle Dateien anzeigen
@@ -261,7 +256,7 @@ PRI init |pmark,newmark,x,y,i,f
   FL.Start
 '**************************************************************************************************************************************************************
 '*********************************** Startparameter ***********************************************************************************************************
-  fileOpened := 0                                                               'keine datei geoeffnet
+  'fileOpened := 0                                                               'keine datei geoeffnet
   volume:=15                                                                    'sid-cog auf volle lautstaerke
   farbe:=light_orange                                                           'Schreibfarbe
   hintergr:=black                                                               'Hintergrundfarbe
@@ -722,8 +717,8 @@ PRI getstr:a|nt,b,str ,f                                                        
               a:=klammer(1)
               byte[@font][0]:=a
               byte[@font][1]:=0
-         179: skipspaces
-              Bus_Funktionen                                                    'Stringrückgabe von XBUS-Funktion
+         '179: skipspaces
+         '     Bus_Funktionen                                                    'Stringrückgabe von XBUS-Funktion
 
 Pri Input_String
        getstr
@@ -792,9 +787,6 @@ PRI factor | tok, a,b,c,d,e,g,f,fnum                                            
           return fl.ffloat(lookup(b:ios.ram_rdbyte(a),ios.ram_rdword(a),0,ios.ram_rdlong(a)))
 
 
-      143: ' FILE
-           return fl.ffloat(ios.sdgetc)
-
       178:'JOY
           a:=klammer(1)
           return fl.ffloat(ios.Joy(3+a))
@@ -808,8 +800,8 @@ PRI factor | tok, a,b,c,d,e,g,f,fnum                                            
            return c
 
 
-      179:'Bus-Funktionen
-          return Bus_Funktionen
+      '179:'Bus-Funktionen
+      '    return Bus_Funktionen
 
       146:'GATTR
            a:=klammer(1)
@@ -818,8 +810,6 @@ PRI factor | tok, a,b,c,d,e,g,f,fnum                                            
 
       173:'COM
            return Comfunktionen
-      '176:'Flash
-      '     return Flash_Funktionen
       156:'sin
            return fl.sin(klammer(0))
       157:'cos
@@ -1011,7 +1001,7 @@ PRI texec | ht, nt, restart,a,b,c,d,e,f,h,elsa,fvar,tab_typ
                       quit
 
                    case nt
-                        154,179:stringfunc(0,0) 'Strings
+                        154,179:stringfunc(0,0)                                   'Strings
                         167,168:skipspaces
                                 a:=klammer(1)
                                 d:=a
@@ -1029,7 +1019,7 @@ PRI texec | ht, nt, restart,a,b,c,d,e,f,h,elsa,fvar,tab_typ
                               b:=spaces
                               skipspaces
                               tp:=a
-                              ios.print(zahlenformat(expr(0)))
+                              ios.print(zahlenformat(expr(0)))                    'normales Zahlenformat
 
                    nt := spaces
                    case nt
@@ -1040,9 +1030,14 @@ PRI texec | ht, nt, restart,a,b,c,d,e,f,h,elsa,fvar,tab_typ
                          ":",0:ios.printchar(fReturn)
                                quit
 
-             129:' Dump <adr>,ram-typ
+             129:'Dump <adr>,ram-typ
                  param(1)
+                 case prm[1]
+                        0:Show_Title(@HUBRAM)
+                        1:Show_Title(@ERAM)
+                        2:Show_Title(@FLASHROM)
                  ios.dump(prm[0],$8000,prm[1])
+                 Show_Title(@Leer)
 
              131:'POKE                                                           Poke(adresse, wert, byte;word;long)
                  param(2)
@@ -1056,16 +1051,16 @@ PRI texec | ht, nt, restart,a,b,c,d,e,f,h,elsa,fvar,tab_typ
              132:'Info
                   systeminfo
 
-             133: ' OPEN " <file> ", R/W/A
-                 Input_String
-                 if spaces <> ","
-                    errortext
-                 d:=skipspaces
-                 tp++
-                 mount
-                 if ios.sdopen(d,@f0)
-                    errortext
-                 fileOpened := true
+            ' 133:'OPEN " <file> ", R/W/A
+            '     Input_String
+            '     if spaces <> ","
+            '        errortext
+            '     d:=skipspaces
+            '     tp++
+            '     mount
+            '     if ios.sdopen(d,@f0)
+            '        errortext
+            '     fileOpened := true
 
              134:'Type
                  Input_String
@@ -1113,9 +1108,9 @@ PRI texec | ht, nt, restart,a,b,c,d,e,f,h,elsa,fvar,tab_typ
                         other:errortext'1,1)
                         }
 
-             136: ' CLOSE
-                fileOpened := false
-                close
+             '136: ' CLOSE
+             '   fileOpened := false
+             '   close
 
              137: ' DEL <file>
                 Input_String
@@ -1252,8 +1247,8 @@ PRI texec | ht, nt, restart,a,b,c,d,e,f,h,elsa,fvar,tab_typ
                           ios. sid_dmppause
              177:'PORT
                  Port_Funktionen
-             179:'XBUS-Funktionen
-                  BUS_Funktionen
+             '179:'XBUS-Funktionen
+             '     BUS_Funktionen
 
              180:'COGS
                   GetCogs
@@ -1305,7 +1300,7 @@ pri Pfadname|adr,i,f,c
     ios.Set_Titel_Status(win,2,@str0)
 
 con'***************************************************** XBUS-Funktionen *******************************************************************************************************
-PRI BUS_Funktionen |pr,a,b,c,h,r,str,s
+{PRI BUS_Funktionen |pr,a,b,c,h,r,str,s
 
     pr:=0                                                                       'pr gibt zurück, ob es sich beim Rückgabewert um einen String oder eine Variable handelt, für die Printausgabe
     klammerauf
@@ -1355,7 +1350,7 @@ PRI BUS_Funktionen |pr,a,b,c,h,r,str,s
        bytemove(@font,str,strsize(str))
        return h
 
-
+}
 con'******************************************** Port-Funktionen der Sepia-Karte *************************************************************************************************
 PRI PORT_Funktionen|function,a,b,c,x,y
     function:=spaces&caseBit
@@ -1414,7 +1409,7 @@ pri ping|i,a,x,y,yt,n
                 ios.printchar(13)
 
 con'********************************************* Flsh-Funktionen *********************************************************************************************
-PRI Flash_Funktionen|function,a,b,c,t,x,y,p,anf,end
+PRI Flash_Funktionen|function,a,b,c,t,x,y,p,anf,end,teiler
     function:=spaces&CaseBit
     skipspaces
         case function
@@ -1477,6 +1472,7 @@ PRI Flash_Funktionen|function,a,b,c,t,x,y,p,anf,end
 
                      else
                         anf:=ios.flashsize/4096                                   'gesamter Flasspeicher - Flashgrösse in 4K Blöcken
+                        teiler:=anf/8                                             'Anzahl 32k-Blöcke
                         a:=anf
                      ios.print(string("Flash loeschen, fortfahren?"))
                      if ios.keywait=="j"
@@ -1493,12 +1489,12 @@ PRI Flash_Funktionen|function,a,b,c,t,x,y,p,anf,end
                                ios.erase_flash_data(b)
                                b+=4096
                                t++
-                               if t==64
+                               if t==8                                            '1x32k-Block gelöscht
                                   t:=0
                                   p++
                                   ios.setpos(y,x)
-                                  ios.printdec(p*100/64)
-                                  ios.printchar(37)                                  'Prozent
+                                  ios.print(FS.FloatToString(fl.ffloat(fl.fmul(fl.fdiv(p,teiler),100))))
+                                  ios.printchar(37)                               'Prozent
                      ios.printnl
 
 
@@ -1634,7 +1630,7 @@ pri is_string |b,c                                                              
     tp:=b
 
     case c
-          point,quote,"$",144:result:=1
+          point,quote,"$":result:=1
 
 PRI komma
     is_spaces(",",1)

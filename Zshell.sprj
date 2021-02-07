@@ -4,13 +4,13 @@ Iamthemagicnumber=1
 [Main]
 SelectedTab=0
 TreePath=\\Mac\Home\Documents\GitHub\ZShell
-NumSubs=7
+NumSubs=9
 OverrideOptimisation=0
 OptimiseFlags=0
 
 [File1]
 FileName=\\Mac\Home\Documents\GitHub\ZShell\ZShell.spin
-TopLine=1445
+TopLine=4
 
 [File2]
 FileName=\\Mac\Home\Documents\GitHub\Trios-Basic\Basic3_5.spin
@@ -18,20 +18,28 @@ TopLine=662
 
 [File3]
 FileName=\\Mac\Home\Documents\GitHub\ZShell\Lib\reg-ios-bas.spin
-TopLine=661
+TopLine=2559
 
 [File4]
 FileName=\\Mac\Home\Documents\GitHub\ZShell\ZShell_Bel.spin
-TopLine=254
+TopLine=513
 
 [File5]
 FileName=\\Mac\Home\Documents\GitHub\ZShell\Lib\admsid.spin
-TopLine=922
+TopLine=208
 
 [File6]
 FileName=\\Mac\Home\Documents\GitHub\Trios-Basic\Lib\Winbond_Driver_neu.spin
-TopLine=270
+TopLine=105
 
 [File7]
 FileName=\\Mac\Home\Documents\GitHub\ZShell\Lib\regflash-neu.spin
 TopLine=123
+
+[File8]
+FileName=\\Mac\Home\Documents\GitHub\ZShell\Lib\BasFloatString2.spin
+TopLine=1
+
+[File9]
+FileName=\\Mac\Home\Documents\GitHub\ZShell\Lib\BasF32.spin
+TopLine=121
