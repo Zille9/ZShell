@@ -678,10 +678,10 @@ pub sdtoflash(adr)',count)
 
 pub flxgetblk(adr,adr2,count)
     bus_putchar1(gc#a_RD_FlashBL)
-    bus_putlong1(adr2)
+    bus_putlong1(adr)
     bus_putlong1(count)
     repeat count
-           ram_wrbyte(bus_getchar1,adr++)
+           ram_wrbyte(bus_getchar1,adr2++)
 
 pub copytoflash(adr)
     bus_putchar1(gc#a_sdtoFlash)
@@ -2591,7 +2591,10 @@ PUB Dump(adr,line,mod) |zeile ,c[8] ,p,i  'adresse, anzahl zeilen,ram oder xram
   p:=getx+23
   repeat line
     printnl
-    printhex(adr,5)
+    if (mod==2)
+       printhex(adr,6)
+    else
+       printhex(adr,5)
     printchar(":")
 
     repeat i from 0 to 7
@@ -2602,7 +2605,8 @@ PUB Dump(adr,line,mod) |zeile ,c[8] ,p,i  'adresse, anzahl zeilen,ram oder xram
       if mod==0
          c[i]:=byte[adr++]
       printhex(c[i],2)
-      printchar(" ")
+
+    printchar(" ")
 
     repeat i from 0 to 7
       printqchar(c[i])

@@ -53,8 +53,8 @@ _XINFREQ     = 5_000_000
    STR_MAX   = linelen                 ' maximale Stringlänge für Printausgaben und Rom
 '*****************Speicherbereiche**********************************************
 
-   ERROR_RAM = $0 '....$0FFF           ' ERROR-Texte
-   VERZ_NAME = $1000 '....$10FF        ' Verzeichnis-Tiefenspeicher
+   FLIST_RAM = $0 '....$1FFF           ' Flash-Liste 32kb
+   VERZ_NAME = $2000 '....$20FF        ' Verzeichnis-Tiefenspeicher
    TILE_RAM  = $40000 '....$667FF      ' hier beginnt der Tile-Speicher fuer 14 Tiledateien(Modus0) oder 8 BMP-Bilder(Modus4)
    SYS_FONT  = $66800 '....$693FF      ' ab hier liegt der System-Font 11kb
    MOUSE_RAM = $69400 '....$6943F      ' User-Mouse-Pointer 64byte
@@ -127,6 +127,7 @@ var
    byte ADDA,PORT                                                             'Puffer der Portadressen der Sepia-Karte
    byte returnmarker
    byte Pfadtiefe                                                             'nummer des wievielten unterpfades
+   byte Flash_vorhanden                                                       'Flash_Marker
 
 dat
    tok0  byte "?",0        ' PRINT                                                         '128 131    getestet
@@ -222,12 +223,17 @@ DAT
    ext5          byte "*.*",0                                                   'alle Dateien anzeigen
    sysfont       byte "sysfontb.dat",0                                          'system-font
    ZShell        byte "ZSHELL for Hive V1.02  ",0                               'Programmname und Version
-
+   Flist         byte "fllist.txt",0                                            'Flash-Dateiliste
 
    FLASHROM      byte "Flash-Rom",0
    ERAM          byte "E-Ram    ",0
    HUBRAM        byte "Hub-Ram  ",0
    LEER          byte "                    ",0
+
+   weiter        byte "<Weiter? */esc:>",0
+
+
+
    windowtile byte 135,137,136,7,141,134,132,130,128,8,129,133,0,131,8,8,8      'Fenster-Tiles für WIN-Funktion im Modus 0
 
 
@@ -257,17 +263,19 @@ PRI init |pmark,newmark,x,y,i,f
 '*********************************** Startparameter ***********************************************************************************************************
   fileOpened := 0                                                               'keine datei geoeffnet
   volume:=15                                                                    'sid-cog auf volle lautstaerke
-  farbe:=light_orange                                                                 'Schreibfarbe
-  hintergr:=black                                                             'Hintergrundfarbe
-  farbe3:=orange                                                          '3.Farbe
+  farbe:=light_orange                                                           'Schreibfarbe
+  hintergr:=black                                                               'Hintergrundfarbe
+  farbe3:=orange                                                                '3.Farbe
 '***************************************************************************************************************************************************************
 
 '**************************************************************************************************************************************************************
-
-     ios.ram_fill(VERZ_NAME,$FF,0)                                                'Errortext-Speicher loeschen
+     ios.ram_fill(FLIST_RAM,$2100,0)                                            'Flashliste und Verzeichnistiefenspeicher im E-Ram löschen
+     if ios.flashsize>0                                                         'Flash vorhanden?
+        Flash_List(2)                                                           'dann Flashliste aus dem Flash in den E-Ram laden
+        Flash_vorhanden:=1                                                      'Flash_Marker setzen
 
      usermarker:=0
-     pfadtiefe:=0                                                                   'wir beginnen im Root-Pfad
+     pfadtiefe:=0                                                               'wir beginnen im Root-Pfad
 
      mount
 '************************** Startbildschirm ***********************************************************************************************************************************
@@ -451,12 +459,14 @@ PRI getline(laenge):e | i,f, c , x,y,t,m,a                                      
 
 '******************* Funktionstasten abfragen *************************
                        219:ende                                                 'F12 basic beenden
-                       218:
-                       217:
+                       218:                                                     'F11
+                       217:if Flash_vorhanden
+                              Flashliste                                        'F10 Flashliste anzeigen
+                           return
                        216:                                                     'F9
                        215:                                                     'F8
                        214:Show_Title(@Flashrom)
-                           if(ios.flash_id)>0
+                           if Flash_vorhanden
                               ios.Dump(0,99999,2)                               'F7 Monitor Flash-Rom
                            else
                               ios.print(string("Kein Flash-Rom!"))
@@ -501,7 +511,7 @@ PRI getline(laenge):e | i,f, c , x,y,t,m,a                                      
                                  ios.print(@tline[i])
                                  if y==Gmodey and (x+laenge-i-1)>GmodeLine          'scroll hoch->dann y-position -1
                                     t:=1
-                                 if x>GmodeLine                                           'x>Zeilenlänge des Treibers
+                                 if x>GmodeLine                                     'x>Zeilenlänge des Treibers
                                     y+=1
                                     x:=0
                                  ios.setpos(y-t,x)
@@ -511,7 +521,39 @@ PRI getline(laenge):e | i,f, c , x,y,t,m,a                                      
                                  ios.printchar(c)
                                  tline[i++] :=c
                               if i>laenge
-                                 laenge:=i                                                          'laenge ist immer die aktuelle laenge der zeile
+                                 laenge:=i                                          'laenge ist immer die aktuelle laenge der zeile
+
+
+pri Flashliste|c,adr,a,z
+    adr:=a:=FLIST_RAM
+    ios.printnl
+    ios.print(string("Flash-Dateiliste:"))
+    ios.printnl
+    z:=0
+    repeat $2000
+           repeat 16
+                  c:=ios.ram_rdbyte(a++)
+                  if c==$FF
+                     next
+                  ios.printchar(c)
+                  if c=="-"
+                     ios.printchar(35)
+                     ios.printhex(ios.ram_rdlong(a),6)
+                     a+=4
+                     ios.printnl
+           if ios.ram_rdbyte(a)==$FF
+              ios.printnl
+              quit
+           z++
+           if z==20
+              ios.print(@weiter)
+              z:=0
+              if ios.keywait==27
+                 quit
+
+
+    ios.printnl
+
 pri Show_Title(f)
     bytemove(@titelzeile[strsize(@zshell)],f,strsize(f))
     ios.Set_Titel_Status(win,1,@Titelzeile)
@@ -601,9 +643,10 @@ pri systeminfo|f,b
     ios.printnl
     close
     ios.printnl
-    ios.print(string("Flash-Rom:"))
-    ios.printnl
-    Flash_Get
+    if Flash_vorhanden
+       ios.print(string("Flash-Rom:"))
+       ios.printnl
+       Flash_Get
 
 Pri Flash_Get
     bytefill(@f0,0,STR_MAX)
@@ -1040,7 +1083,7 @@ PRI texec | ht, nt, restart,a,b,c,d,e,f,h,elsa,fvar,tab_typ
                         b++
                      if b == 660
                         ios.printnl
-                        ios.print(string("<Weiter? */esc:>"))
+                        ios.print(@weiter)
                         if ios.keywait == 27
                            ios.printnl
                            quit
@@ -1187,7 +1230,11 @@ PRI texec | ht, nt, restart,a,b,c,d,e,f,h,elsa,fvar,tab_typ
                      quit
              173:'COM
                  Comfunktionen
-             176:Flash_Funktionen
+             176:if Flash_vorhanden
+                    Flash_Funktionen
+                 else
+                    ios.print(string("Kein Flash-Rom installiert!"))
+                    ios.printnl
 
              175:'PLAY
                    'if is_string
@@ -1365,8 +1412,9 @@ pri ping|i,a,x,y,yt,n
                 ios.printchar(32)
                 ios.printdec(i)
                 ios.printchar(13)
+
 con'********************************************* Flsh-Funktionen *********************************************************************************************
-PRI Flash_Funktionen|function,a,b,c,t,x,y,p
+PRI Flash_Funktionen|function,a,b,c,t,x,y,p,anf,end
     function:=spaces&CaseBit
     skipspaces
         case function
@@ -1374,9 +1422,9 @@ PRI Flash_Funktionen|function,a,b,c,t,x,y,p
                     Input_String                                                'Datei in Flash speichern - Eingabe Dateiname
                     ios.print(@f0)
                     tp--
-                    'ios.printchar(spaces)
                     komma
                     a:=expr(1)                                                  'an Adresse
+                    Flash_Name(a)
                     mount
                     if ios.sdopen("R",@f0)                                      'Fehler beim öffnen?
                        errortext
@@ -1405,6 +1453,7 @@ PRI Flash_Funktionen|function,a,b,c,t,x,y,p
 
                     ios.printnl
                     close
+                    Flash_List(1)                                                'Dateiliste im Flash aktualisieren
 
 
 
@@ -1413,20 +1462,33 @@ PRI Flash_Funktionen|function,a,b,c,t,x,y,p
 
 
             "L"    :'Flash_Datei starten                                          'Flash-Datei laden und starten
-                    a:=expr(1)
+                    a:=expr(1)                                                    'adresseneingabe
+                    if a>0
+                       a:=a/$8000                                                 'wievielte 32kb Datei im Flash?
+                    a+=2                                                          'jede Datei hat den offset 2 d.h. Datei 0 wird mit 2 gestartet
+                    ios.ld_rambin(a)
 
 
             "E"    :'Flash löschen                                                'Flash-Löschen (entweder adressbereich oder alles)
+                     if spaces==44                                                'komma?
+                        skipspaces
+                        anf:=expr(1)                                              'Anfangsadresse
+                        a:=((anf+$8000)-anf)/4096                                 '32kB Bereich
+
+                     else
+                        anf:=ios.flashsize/4096                                   'gesamter Flasspeicher - Flashgrösse in 4K Blöcken
+                        a:=anf
                      ios.print(string("Flash loeschen, fortfahren?"))
                      if ios.keywait=="j"
                         ios.printnl
-                        ios.print(string("loesche gesamten Flash-Rom!"))
-                        a:=ios.flashsize/4096                                        'Flashgrösse in 4K Blöcken
+                        ios.print(string("loesche Flash-Rom!"))
+
                         b:=0
                         x:=ios.getx
                         y:=ios.gety
                         t:=0
                         p:=0
+                        b:=anf
                         repeat a
                                ios.erase_flash_data(b)
                                b+=4096
@@ -1437,11 +1499,46 @@ PRI Flash_Funktionen|function,a,b,c,t,x,y,p
                                   ios.setpos(y,x)
                                   ios.printdec(p*100/64)
                                   ios.printchar(37)                                  'Prozent
-                        ios.printnl
+                     ios.printnl
 
 
             other:
                    errortext
+pri Flash_name(adr)|a,i                                 'schreibt den Namen und die Flash-Adresse in den E-Ram
+    a:=0
+    if adr>0
+       a:=adr/$8000
+    a:=FLIST_RAM+(a*(12+4))                             '12 Bytes für Name + 4 Bytes Adresse
+    i:=0
+    repeat strsize(@f0)
+           ios.ram_wrbyte(byte[@font][i++],a++)         'Programmname schreiben
+    ios.ram_wrbyte(45,a++)                              'Trennzeichen
+    ios.ram_wrlong(adr,a)                               'Adresse schreiben
+
+Pri Flash_List(mode)|adr,a,b,i
+    a:=ios.flashsize
+    adr:=a-$8000                                                                'letzter 32kb Block im Flash ist die Datei-Liste
+    b:=adr
+    case mode                                                                   'im Flash aktualisieren oder in E-Ram schreiben
+          1: ios.print(string("schreibe Liste neu!"))
+             ios.printnl
+             repeat 8
+                 ios.erase_flash_data(b)                                        'alte Flashliste löschen
+                 b+=$1000
+                 ios.printchar(point)
+             ios.SET_FlashAdress(adr)
+             a:=FLIST_RAM
+             i:=0
+             repeat $2000
+                   ios.PUT_FlashByte(ios.ram_rdbyte(a++))                       'Liste aus dem E-ram in den Flash schreiben
+                   i++
+                   if i==$1000
+                      ios.printchar(point)
+                      i:=0
+
+          2: ios.flxgetblk(adr,FLIST_RAM,$2000)                                 'Liste aus dem Flash in den E-Ram schreiben
+
+
 PRI Hex(f,value,digits)
   value <<= (8 - digits) << 2
   repeat digits
