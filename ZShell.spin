@@ -41,7 +41,8 @@ Eigenschaften   : -Komandozeilen-Prozessor mit mathematischen Fähigkeiten
 
 08-02-2021      -Systemfont fest in Bellatrix-Treiber integriert, dadurch entfällt das Laden des Fonst nach Bellatrix beim Start
                 -Trios-Logo in Titelzeile eingebaut
-                -
+                -EEPROM-Routine eingefügt, um Farbwerte im EEPROM zu speichern und beim Start zu laden
+                -3935 Longs frei
 
  --------------------------------------------------------------------------------------------------------- }}
 
@@ -114,10 +115,16 @@ _XINFREQ     = 5_000_000
 
    ntoks        = 55   'Anzahl der Befehle
 
+  EEPROM_START_ADRESSE = $8000                               'bei Verwendung 64kb EEPROM
+
+'  EEPROM_START_ADRESSE = $7FFD                               'bei Verwendung 32kb EEPROM
+
+
 var
    long tp                                                                    'Kommandozeile
    long prm[10]                                                               'Befehlszeilen-Parameter-Feld (hier werden die Parameter der einzelnen Befehle eingelesen)
    long usermarker                                                            'Dir-Marker-Puffer für Datei-und Verzeichnis-Operationen
+
 
    word filenumber                                                            'Anzahl der mit Dir gefundenen Dateien
 
@@ -136,6 +143,8 @@ var
    byte returnmarker
    byte Pfadtiefe                                                             'nummer des wievielten unterpfades
    byte Flash_vorhanden                                                       'Flash_Marker
+
+
 
 dat
    tok0  byte "?",0        ' PRINT                                                         '128     getestet
@@ -227,6 +236,7 @@ DAT
    FLASHROM      byte "Flash-Rom",0
    ERAM          byte "E-Ram    ",0
    HUBRAM        byte "Hub-Ram  ",0
+   EEPROM        byte "EEPROM   ",0
    LEER          byte "                    ",0
 
    weiter        byte "<Weiter? */esc:>",0
@@ -249,7 +259,7 @@ PUB main | sa
       sa  := 0                                                                  'Zeile verwerfen da abgearbeitet
 
 con'****************************************** Initialisierung *********************************************************************************************************************
-PRI init |pmark,newmark,x,y,i,f
+PRI init |f1,f2,f3
 
   ios.start
   ios.sdmount                                                                   'SD-Karte Mounten
@@ -258,6 +268,7 @@ PRI init |pmark,newmark,x,y,i,f
 
   FS.SetPrecision(6)                                                            'Präzision der Fliesskomma-Arithmetik setzen
   FL.Start
+
 '**************************************************************************************************************************************************************
 '*********************************** Startparameter ***********************************************************************************************************
   volume:=15                                                                    'sid-cog auf volle lautstaerke
@@ -265,6 +276,8 @@ PRI init |pmark,newmark,x,y,i,f
   hintergr:=black                                                               'Hintergrundfarbe
   farbe3:=orange                                                                '3.Farbe
   Mode_Ready
+
+
 '***************************************************************************************************************************************************************
 
 '**************************************************************************************************************************************************************
@@ -276,7 +289,17 @@ PRI init |pmark,newmark,x,y,i,f
      usermarker:=0
      pfadtiefe:=0                                                               'wir beginnen im Root-Pfad
 
-     mount
+     'mount
+  ios.start_i2c(%000)                                                           'I2C_Routine starten
+  F1:=ios.i2c_rd_byte(EEPROM_START_ADRESSE)
+  F2:=ios.i2c_rd_byte(EEPROM_START_ADRESSE+1)
+  F3:=ios.i2c_rd_byte(EEPROM_START_ADRESSE+2)
+
+  if F1<>F2                                                                     'Werte aus dem EEPROM nur übernehmen, wenn Vordergrundfarbe und Hintergrundf. unterschiedlich sind
+     farbe:=F1
+     hintergr:=F2
+     farbe3:=F3
+
 '************************** Startbildschirm ***********************************************************************************************************************************
      win:=1                                                                           'aktuelle fensternummer 1 ist das Hauptfenster
 
@@ -292,6 +315,7 @@ PRI init |pmark,newmark,x,y,i,f
  '*************** Logo anzeigen **************************************
      cursor:=3                                                                        'cursormarker für Cursor on
      ios.set_func(cursor,Cursor_Set)
+
 
 '*******************************************************************************************************************************************************************************
   '******************************************************************************************************************************************************
@@ -309,9 +333,26 @@ PRI init |pmark,newmark,x,y,i,f
   ios.set_plxAdr(ADDA,PORT)
   bytemove(@Titelzeile,@zshell,strsize(@zshell))
 
+
 pri Mode_Ready
 
          repeat while ios.bus_getchar2<>88                                         'warten auf Grafiktreiber
+{pub i2c_wr_byte(addr, bf) | ackbit
+
+'' Write byte to eeprom
+
+  ackbit := ios.i2c_wr_block(addr, 1, @bf)
+
+  return ackbit
+
+pub i2c_rd_byte(addr) | bf
+
+'' Return byte value from eeprom
+
+  ios.i2c_rd_block(addr, 1, @bf)
+
+  return bf & $0000_00FF                                         ' clean-up
+}
 
 obj '************************** Datei-Unterprogramme ******************************************************************************************************************************
 con '------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -458,13 +499,17 @@ PRI getline(laenge):e | i,f, c , x,y,t,m,a                                      
                        217:if Flash_vorhanden
                               Flashliste                                        'F10 Flashliste anzeigen
                            return
-                       216:                                                     'F9
-                       215:ios.displaypic(farbe,hintergr,farbe3,10,10,11,16)                                                     'F8
-                       214:if Flash_vorhanden
+                       216:ios.displaypic(farbe,hintergr,farbe3,10,10,11,16)    'F9 Fontsatz anzeigen
+                       215:if Flash_vorhanden
                               Show_Title(@Flashrom)
-                              ios.Dump(0,99999,2)                               'F7 Monitor Flash-Rom
+                              ios.Dump(0,99999,2)                               'F8 Monitor Flash-Rom
                            else
                               ios.print(string("Kein Flash-Rom!"))
+                           Show_Title(@leer)
+                           return
+
+                       214:Show_Title(@EEPROM)
+                           ios.Dump(0,99999,3)                                  'F7 Monitor EEPROM
                            Show_Title(@leer)
                            return
 
@@ -1197,6 +1242,9 @@ PRI texec | ht, nt, restart,a,b,c,d,e,f,h,elsa,fvar,tab_typ
                  ios.window(win,farbe,hintergr,farbe3,farbe3,farbe,hintergr,farbe3,white,0,0,29,39,7,0)
                  ios.Set_Titel_Status(win,1,@zshell)
                  Pfadname
+                 ios.i2c_wr_byte(EEPROM_START_ADRESSE, farbe)
+                 ios.i2c_wr_byte(EEPROM_START_ADRESSE+1,hintergr)
+                 ios.i2c_wr_byte(EEPROM_START_ADRESSE+2,farbe3)
 
 
              166: 'CLS

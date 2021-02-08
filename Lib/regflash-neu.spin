@@ -372,7 +372,7 @@ sysname           byte "reg.sys", 0                         'name der systemdate
 DAT ' HEAP REGIME-KONF
 '#ifdef regime
 
-heap                    long 0[7971] 'Für eine korrekte Funktion müssen 26 Longs frei bleiben
+heap                    long 0[7974] 'Für eine korrekte Funktion müssen 26 Longs frei bleiben
 
 
 heapend
