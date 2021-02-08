@@ -332,7 +332,7 @@ PUB init_subsysteme|i',x,y,tn,tmp                                   'chip: initi
 
   ifnot vga.TMPEngineStart(_pinGroup, @XPos, @YPos)
     reboot
-  waitcnt((clkfreq * _startUpWait) + cnt)
+  'waitcnt((clkfreq * _startUpWait) + cnt)
   mouse.start(BEL_MOUSED, BEL_MOUSEC)
 
   mouseshow:=0                                                                                           'Mousezeiger aus
@@ -370,7 +370,7 @@ PUB init_subsysteme|i',x,y,tn,tmp                                   'chip: initi
   wind[7]:=255
   wind[8]:=0
 
-  'bus_putchar(88)                                                                                        'Treiber-bereit-Rückmeldung
+  bus_putchar(88)                                                                                        'Treiber-bereit-Rückmeldung
 
 PUB bus_putchar(zeichen)                                'chip: ein byte an regnatix senden
 ''funktionsgruppe               : chip
@@ -1212,7 +1212,8 @@ DAT
 entry                   jmp     entry                   'just loops
 
 
-tileset long 0[2816]
+tileset long
+        file "sysfontb.dat" 'long 0[2816]
 
 
 

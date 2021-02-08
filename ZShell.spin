@@ -39,6 +39,10 @@ Eigenschaften   : -Komandozeilen-Prozessor mit mathematischen Fähigkeiten
                 -es fehlt noch die Aktualisierung der Flashliste im Ram und Rom
                 -4043 Longs frei
 
+08-02-2021      -Systemfont fest in Bellatrix-Treiber integriert, dadurch entfällt das Laden des Fonst nach Bellatrix beim Start
+                -Trios-Logo in Titelzeile eingebaut
+                -
+
  --------------------------------------------------------------------------------------------------------- }}
 
 obj
@@ -217,7 +221,7 @@ Dat '*************** Grafikparameter **************************
 DAT
    ext5          byte "*.*",0                                                   'alle Dateien anzeigen
    sysfont       byte "sysfontb.dat",0                                          'system-font
-   ZShell        byte "ZSHELL for Hive V1.02  ",0                               'Programmname und Version
+   ZShell        byte "╋┤├┴┬-Shell V1.2 ",0                                     'Logo+Programmname und Version
    Flist         byte "fllist.txt",0                                            'Flash-Dateiliste
 
    FLASHROM      byte "Flash-Rom",0
@@ -256,11 +260,11 @@ PRI init |pmark,newmark,x,y,i,f
   FL.Start
 '**************************************************************************************************************************************************************
 '*********************************** Startparameter ***********************************************************************************************************
-  'fileOpened := 0                                                               'keine datei geoeffnet
   volume:=15                                                                    'sid-cog auf volle lautstaerke
   farbe:=light_orange                                                           'Schreibfarbe
   hintergr:=black                                                               'Hintergrundfarbe
   farbe3:=orange                                                                '3.Farbe
+  Mode_Ready
 '***************************************************************************************************************************************************************
 
 '**************************************************************************************************************************************************************
@@ -277,18 +281,15 @@ PRI init |pmark,newmark,x,y,i,f
      win:=1                                                                           'aktuelle fensternummer 1 ist das Hauptfenster
 
   '*************** Bildschirmaufbau ***********************************
-     LoadTiletoRam(@sysfont)                                              'Logo und Font in eram laden
-
-     loadtile                                                             'Logo und Font in den Puffer laden
+     Win_Set_Tiles
      ios.window(win,farbe,hintergr,farbe3,farbe3,farbe,hintergr,farbe3,hintergr,0,0,29,39,7,0)
      ios.set_func(win,Print_Window)
 
      ios.printchar(12)                                                             'cls
      ios.Set_Titel_Status(win,1,@zshell)                                           'Titel in Titelzeile
      ios.Set_Titel_Status(win,2,string("\"))
-
+     'Logo                                                                          'Trios-Logo anzeigen
  '*************** Logo anzeigen **************************************
-     x:=y:=0
      cursor:=3                                                                        'cursormarker für Cursor on
      ios.set_func(cursor,Cursor_Set)
 
@@ -311,7 +312,6 @@ PRI init |pmark,newmark,x,y,i,f
 pri Mode_Ready
 
          repeat while ios.bus_getchar2<>88                                         'warten auf Grafiktreiber
-
 
 obj '************************** Datei-Unterprogramme ******************************************************************************************************************************
 con '------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -459,9 +459,9 @@ PRI getline(laenge):e | i,f, c , x,y,t,m,a                                      
                               Flashliste                                        'F10 Flashliste anzeigen
                            return
                        216:                                                     'F9
-                       215:                                                     'F8
-                       214:Show_Title(@Flashrom)
-                           if Flash_vorhanden
+                       215:ios.displaypic(farbe,hintergr,farbe3,10,10,11,16)                                                     'F8
+                       214:if Flash_vorhanden
+                              Show_Title(@Flashrom)
                               ios.Dump(0,99999,2)                               'F7 Monitor Flash-Rom
                            else
                               ios.print(string("Kein Flash-Rom!"))
@@ -552,7 +552,7 @@ pri Flashliste|c,adr,a,z
 pri Show_Title(f)
     bytemove(@titelzeile[strsize(@zshell)],f,strsize(f))
     ios.Set_Titel_Status(win,1,@Titelzeile)
-
+    'Logo
 pri Getcogs|a,b,r,t
 
     a:=ios.admgetcogs
@@ -1856,7 +1856,7 @@ PRI Win_Set_Tiles|i,a                                                           
            ios.ram_wrbyte(windowtile[a++],i++)                                  'Standard-Wintiles in den Ram schreiben
     ios.windel(9,0,WTILE_RAM)                                                   'alle Fensterparameter löschen und Win Tiles senden
 
-PRI LoadTiletoRam(datei)|adress ,count                       'tile:=tilenr,dateiname,xtile-zahl,ytilezahl
+{PRI LoadTiletoRam(datei)|adress ,count                       'tile:=tilenr,dateiname,xtile-zahl,ytilezahl
 
     count:=16*11*64                                                             'anzahl zu ladender Bytes (16*11*16*4=11264)
     adress:=TILE_RAM                                                            'naechster Tilebereich immer 2816 longs (11264 Bytes) 14 Tilesets moeglich Tileset15 ist der Systemfont
@@ -1871,7 +1871,7 @@ PRI loadtile|anzahl,adress                                             'tileset 
     adress:=TILE_RAM                                                            'naechster Tilebereich immer 2816 longs (11264 Bytes) 14 Tilesets moeglich
     anzahl:=2816 '(xtiles*ytiles*64)/4                                          'anzahl tilebloecke in long
     ios.loadtilebuffer(adress,anzahl)                                           'laden
-
+}
 DAT
 
 {{

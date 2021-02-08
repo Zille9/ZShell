@@ -1,3 +1,0 @@
-0		-	Reg.sys
-#8000	-	Reg.sys
-#10000	-	Reg.sys
