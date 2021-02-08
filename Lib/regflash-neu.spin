@@ -51,7 +51,7 @@ word[6] - PCURR - Current program counter. This points at the starting address o
 word[7] - DCURR - Stack pointer. This is the initial value of the stack pointer.
 
 
--Erweiterung um die Funktion Programme in den e-Ram zu laden und von dort in den Heapram zu übertragen
+-Erweiterung um die Funktion: Programme in den e-Ram oder Flash-Rom zu laden und von dort in den Heapram zu übertragen
 -das erhöht den Programmwechsel unter Plexus erheblich (es entsteht der Eindruck von in Plexus eingebetteten Programmteilen (DLL's)
 
  --------------------------------------------------------------------------------------------------------- }}

@@ -42,7 +42,7 @@ Eigenschaften   : -Komandozeilen-Prozessor mit mathematischen Fähigkeiten
 08-02-2021      -Systemfont fest in Bellatrix-Treiber integriert, dadurch entfällt das Laden des Fonst nach Bellatrix beim Start
                 -Trios-Logo in Titelzeile eingebaut
                 -EEPROM-Routine eingefügt, um Farbwerte im EEPROM zu speichern und beim Start zu laden
-                -3935 Longs frei
+                -3923 Longs frei
 
  --------------------------------------------------------------------------------------------------------- }}
 

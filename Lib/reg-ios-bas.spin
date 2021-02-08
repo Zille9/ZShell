@@ -2602,11 +2602,42 @@ pub startex(sclpin, sdapin, device)
 
   devid := EE_WRITE | ((%000 #> device <# %111) << 1)
   return devid
+con '************************** I2C-Write-Funktionen ********************************
 pub i2c_wr_byte(addr, bf) | ackbit
 
 '' Write byte to eeprom
 
   ackbit := i2c_wr_block(addr, 1, @bf)
+
+  return ackbit
+
+pub wr_word(addr, w) | ackbit
+
+'' Write word to eeprom
+
+  ackbit := i2c_wr_block(addr, 2, @w)
+
+  return ackbit
+
+
+pub wr_long(addr, l) | ackbit
+
+'' Write long to eeprom
+
+  ackbit := i2c_wr_block(addr, 4, @l)
+
+  return ackbit
+
+pub wr_str(addr, p_zstr) | ackbit, bf
+
+'' Write z-string at p_zstr to eeprom
+
+  ackbit := i2c#ACK                                             ' assume okay
+  repeat
+    bf := byte[p_zstr++]                                         ' get byte from string
+    ackbit |= i2c_wr_byte(addr++, bf)                                ' write to card
+    if (bf == 0)                                                 ' end of string?
+      quit                                                      '  yes, we're done
 
   return ackbit
 
@@ -2625,6 +2656,22 @@ pub i2c_wr_block(addr, n, p_src) | ackbit
 
   return ackbit
 
+pub i2c_fill(addr, n, bf) | ackbit
+
+'' Write byte b to eeprom n times, starting with at addr
+'' -- be mindful of address/page size in device to prevent page wrap-around
+
+  i2c.wait(devid)
+  i2c.write(addr.byte[1])                                       ' msb of address
+  i2c.write(addr.byte[0])                                       ' lsb of address
+  ackbit := i2c#ACK                                             ' assume okay
+  repeat n
+    ackbit |= i2c.write(bf)                                      ' write the byte
+  i2c.stop
+
+  return ackbit
+
+con '************************** I2C-Read-Funktionen ********************************
 pub i2c_rd_byte(addr) | bf
 
 '' Return byte value from eeprom
@@ -2649,6 +2696,33 @@ pub i2c_rd_block(addr, n, p_dest)
     --n
   byte[p_dest] := i2c.read(i2c#NAK)                             ' last byte gets NAK
   i2c.stop
+
+pub i2c_rd_word(addr) | w
+
+'' Return word value eeprom
+
+  i2c_rd_block(addr, 2, @w)
+
+  return w & $0000_FFFF
+
+
+pub i2c_rd_long(addr) | l
+
+'' Return long value from eeprom
+
+  i2c_rd_block(addr, 4, @l)
+
+  return l
+
+pub rd_str(addr, p_dest) | bf
+
+'' Read (arbitrary-length) z-string, store at p_dest
+
+  repeat
+    bf := i2c_rd_byte(addr++)                                        ' read byte from device
+    byte[p_dest++] := bf                                         ' write to destination
+    if (bf == 0)                                                 ' at end?
+      quit                                                      '  if yes, we're done
 
 DAT
                         org 0
