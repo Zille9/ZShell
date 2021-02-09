@@ -913,31 +913,43 @@ PRI rtc_test                                            'rtc: Test if RTC Chip i
 
 con''-------------------------------------------------- Winbond-Flash-Speicher Routinen ------------------------------------------------------------------------------------------
 pub Read_Flash_Data|ct,adr
+    outa[LED_OPEN]~~
     adr:=sub_getlong
     bus_putchar(flash.readData(adr,ct,-1))
+    outa[LED_OPEN]~
 
 pub Write_Flash_Data|adr
+    outa[LED_OPEN]~~
     adr:=sub_getlong
     flash.writeData(adr,bus_getchar,-1)
+    outa[LED_OPEN]~
 
 pub Read_flash_long|adr,wert,i
+    outa[LED_OPEN]~~
     adr:=sub_getlong
     sub_putlong(flash.readData(adr,wert,-4))
+    outa[LED_OPEN]~
+
 pub Write_flash_long|adr
+    outa[LED_OPEN]~~
     adr:=sub_getlong
     flash.writeData(adr,sub_getlong,-4)
+    outa[LED_OPEN]~
 
 pub write_Flash_block|adr,count,i
     adr:=sub_getlong
     count:=sub_getlong
     i:=0
+    outa[LED_OPEN]~~
     repeat count
          bufrx[i++]:=bus_getchar
     flash.writeData(adr,@bufrx,count)
+    outa[LED_OPEN]~
 
 pub read_Flash_block|adr,laenge,i
     adr:=sub_getlong
     laenge:=sub_getlong
+    outa[LED_OPEN]~~
     repeat
              if laenge>4095                             '4kB Daten lesen
                 flash.readData(adr,@bufrx,4096)
@@ -953,31 +965,37 @@ pub read_Flash_block|adr,laenge,i
                    quit
              adr+=4096
              laenge-=4096
+    outa[LED_OPEN]~
 
 pub read_Flash_block2|adr,count,i
     adr:=sub_getlong
     count:=sub_getlong
+    outa[LED_OPEN]~~
     repeat count
            bus_putchar(flash.readData(adr++,i,-1))
+    outa[LED_OPEN]~
 
 pub write_Flash_block2|adr,count,i
     adr:=sub_getlong
     count:=sub_getlong
-
+    outa[LED_OPEN]~~
     repeat count
          flash.writeData(adr,bus_getchar,-1)
          adr++
+    outa[LED_OPEN]~
 
 pub sdtoflash|adr,count,d
     adr:=sub_getlong
     count:=\sdfat.listSize
+    outa[LED_OPEN]~~
     repeat count
          flash.writeData(adr++,\sdfat.readCharacter,-1)
+    outa[LED_OPEN]~
 
 pub flashtosd|adr,laenge,i,c
     adr:=sub_getlong
     laenge:=sub_getlong
-
+    outa[LED_OPEN]~~
     \sdfat.newFile(string("Flash.fls"))
     \sdfat.openFile(string("Flash.fls"), "W")           'zum schreiben öffnen
 
@@ -987,6 +1005,8 @@ pub flashtosd|adr,laenge,i,c
            outa[LED_OPEN]~                                   'LED an
     \sdfat.closeFile                                    'Datei schließen
     bus_putchar(0)
+    outa[LED_OPEN]~
+
 con' ############################ Flash-Dateihandling #############################################################################################################################
 {pub Init_Flash_File|err
     sub_getstr

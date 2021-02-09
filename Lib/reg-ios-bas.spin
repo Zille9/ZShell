@@ -97,7 +97,7 @@ KEY_OS          = $08
 
 CON 'Systemvariablen
 'systemvariablen
-LOADERPTR       = $0FFFFB       '4 Byte                 'Zeiger auf Loader-Register im hRAM
+{LOADERPTR       = $0FFFFB       '4 Byte                 'Zeiger auf Loader-Register im hRAM
 MAGIC           = $0FFFFA       '1 Byte                 'Warmstartflag
 SIFLAG          = $0FFFF9       '1 byte                 'Screeninit-Flag
 BELDRIVE        = $0FFFED       '12 Byte                'Dateiname aktueller Grafiktreiber
@@ -107,7 +107,18 @@ RAMEND          = $0FFFA8       '4 Byte                 'Zeiger auf oberstes fre
 RAMBAS          = $0FFFA4       '4 Byte                 'Zeiger auf unterstes freies Byte (einfache Speicherverwaltung)
 
 SYSVAR          = $0FFFA3                               'Adresse des obersten freien Bytes, darüber folgen Systemvariablen
+}
+LOADERPTR       = $0FFFFF   - 4                         'Zeiger auf Loader-Register im hRAM
+MAGIC           = LOADERPTR - 1                         'Warmstartflag
+SIFLAG          = MAGIC     - 1                         'Screeninit-Flag
+BELDRIVE        = SIFLAG    - 12                        'Dateiname aktueller Grafiktreiber
+PARAM           = BELDRIVE  - 65                        'Parameterstring
+TIB2            = PARAM     - 65
+RAMDRV          = TIB2      - 1                         'Ramdrive-Flag
+RAMEND          = RAMDRV    - 4                         'Zeiger auf oberstes freies Byte (einfache Speicherverwaltung)
+RAMBAS          = RAMEND    - 4                         'Zeiger auf unterstes freies Byte (einfache Speicherverwaltung)
 
+SYSVAR          = RAMBAS    - 1                         'Adresse des obersten freien Bytes, darüber folgen Systemvariablen
 CON 'Sonstiges
 'CNT_HBEAT       = 5_000_0000                            'blinkgeschw. front-led
 DB_IN           = %00000110_11111111_11111111_00000000  'maske: dbus-eingabe
@@ -283,6 +294,7 @@ CON 'BELLATRIX-FUNKTIONEN ------------------------------------------------------
   EE_READ  = %1010_000_1
 
   PG_SIZE  = 128
+  sysmod        = 0
 
 obj
     ram_rw :"ram"
@@ -314,7 +326,7 @@ PUB start: wflag                                    'system: ios initialisieren
 
   sddmact(DM_USER)                                      'wieder in userverzeichnis wechseln
   lflagadr := ram_rdlong(LOADERPTR)                     'adresse der loader-register setzen
-  
+
   if ram_rdbyte(MAGIC) == 235
     'warmstart
     wflag := 1
@@ -325,6 +337,7 @@ PUB start: wflag                                    'system: ios initialisieren
     wflag := 0
     ram_wrbyte(0,RAMDRV)                         'Ramdrive ist abgeschaltet
 
+
 PUB stop                                                'loader: beendet anwendung und startet os
 ''funktionsgruppe               : system
 ''funktion                      : beendet die laufende  anwendung und kehrt zum os (reg.sys) zurück
@@ -333,13 +346,13 @@ PUB stop                                                'loader: beendet anwendu
 ''busprotokoll                  : -
   ram_rw.stop
   ser.stop
-  'sd_mount
-  sddmact(DM_ROOT)
+'  sdmount
+'  sddmact(DM_ROOT)
   admreset
   belreset
-  'sdopen("r",@regsys)
-  'ldbin(@regsys)
-  'repeat
+'  sdopen("r",@regsys)
+'  ldbin(@regsys)
+'  repeat
    reboot
 
 PUB paraset(stradr) | i,c                               'system: parameter --> eram

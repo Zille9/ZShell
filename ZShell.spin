@@ -71,7 +71,7 @@ _XINFREQ     = 5_000_000
    FLIST_RAM = $0 '....$1FFF           ' Flash-Liste 32kb
    VERZ_NAME = $2000 '....$20FF        ' Verzeichnis-Tiefenspeicher
    TILE_RAM  = $40000 '....$667FF      ' hier beginnt der Tile-Speicher fuer 14 Tiledateien(Modus0) oder 8 BMP-Bilder(Modus4)
-   WTILE_RAM= $7E500 '.... $7E9FF      ' Win-Tile Puffer hier können die Tiles, aus denen die Fenster gebaut werden geändert werden
+   WTILE_RAM= $7E900 '.... $7E9FF      ' Win-Tile Puffer hier können die Tiles, aus denen die Fenster gebaut werden geändert werden
 
 
    ADM_SPEC       = gc#A_FAT|gc#A_LDR|gc#A_SID|gc#A_RTC|gc#A_PLX'%00000000_00000000_00000000_11110011
@@ -157,7 +157,7 @@ dat
    tok5  byte "OPEN", 0     ' ********* Frei *********                                      133     getestet
    tok6  byte "TYPE", 0     ' TYPE <file> Dateiinhalt auf Bildschirm ausgeben               134     getestet
    tok7  byte "WRITE", 0    ' ********* Frei *********                                      135     getestet
-   tok8  byte "CLOSE", 0    ' ********* Frei *********                                      136     getestet
+   tok8  byte "CALL", 0    ' ********* Frei *********                                       136     getestet
    tok9  byte "DEL", 0      ' DELETE " <file> "                                             137     getestet
    tok10 byte "REN", 0      ' RENAME " <file> "," <file> "                                  138     getestet
    tok11 byte "CHDIR",0      ' Verzeichnis wechseln                                         139     getestet    kann nicht CD heissen, kollidiert sonst mit Hex-Zahlen-Auswertung in getanynumber
@@ -268,7 +268,6 @@ PRI init |f1,f2,f3
 
   FS.SetPrecision(6)                                                            'Präzision der Fliesskomma-Arithmetik setzen
   FL.Start
-
 '**************************************************************************************************************************************************************
 '*********************************** Startparameter ***********************************************************************************************************
   volume:=15                                                                    'sid-cog auf volle lautstaerke
@@ -281,15 +280,14 @@ PRI init |f1,f2,f3
 '***************************************************************************************************************************************************************
 
 '**************************************************************************************************************************************************************
-     ios.ram_fill(FLIST_RAM,$2100,0)                                            'Flashliste und Verzeichnistiefenspeicher im E-Ram löschen
-     if ios.flashsize>0                                                         'Flash vorhanden?
-        Flash_List(2)                                                           'dann Flashliste aus dem Flash in den E-Ram laden
-        Flash_vorhanden:=1                                                      'Flash_Marker setzen
+  ios.ram_fill(FLIST_RAM,$2100,0)                                            'Flashliste und Verzeichnistiefenspeicher im E-Ram löschen
+  if ios.flashsize>0                                                         'Flash vorhanden?
+     Flash_List(2)                                                           'dann Flashliste aus dem Flash in den E-Ram laden
+     Flash_vorhanden:=1                                                      'Flash_Marker setzen
 
-     usermarker:=0
-     pfadtiefe:=0                                                               'wir beginnen im Root-Pfad
+  usermarker:=0
+  pfadtiefe:=0                                                               'wir beginnen im Root-Pfad
 
-     'mount
   ios.start_i2c(%000)                                                           'I2C_Routine starten
   F1:=ios.i2c_rd_byte(EEPROM_START_ADRESSE)
   F2:=ios.i2c_rd_byte(EEPROM_START_ADRESSE+1)
@@ -300,21 +298,22 @@ PRI init |f1,f2,f3
      hintergr:=F2
      farbe3:=F3
 
+  mount
+  close
 '************************** Startbildschirm ***********************************************************************************************************************************
-     win:=1                                                                           'aktuelle fensternummer 1 ist das Hauptfenster
+  win:=1                                                                           'aktuelle fensternummer 1 ist das Hauptfenster
 
   '*************** Bildschirmaufbau ***********************************
-     Win_Set_Tiles
-     ios.window(win,farbe,hintergr,farbe3,farbe3,farbe,hintergr,farbe3,hintergr,0,0,29,39,7,0)
-     ios.set_func(win,Print_Window)
+  Win_Set_Tiles
+  ios.window(win,farbe,hintergr,farbe3,farbe3,farbe,hintergr,farbe3,hintergr,0,0,29,39,7,0)
+  ios.set_func(win,Print_Window)
 
-     ios.printchar(12)                                                             'cls
-     ios.Set_Titel_Status(win,1,@zshell)                                           'Titel in Titelzeile
-     ios.Set_Titel_Status(win,2,string("\"))
-     'Logo                                                                          'Trios-Logo anzeigen
+  ios.printchar(12)                                                             'cls
+  ios.Set_Titel_Status(win,1,@zshell)                                           'Titel in Titelzeile
+  ios.Set_Titel_Status(win,2,string("\"))
  '*************** Logo anzeigen **************************************
-     cursor:=3                                                                        'cursormarker für Cursor on
-     ios.set_func(cursor,Cursor_Set)
+  cursor:=3                                                                        'cursormarker für Cursor on
+  ios.set_func(cursor,Cursor_Set)
 
 
 '*******************************************************************************************************************************************************************************
@@ -332,27 +331,12 @@ PRI init |f1,f2,f3
   PORT:=$38
   ios.set_plxAdr(ADDA,PORT)
   bytemove(@Titelzeile,@zshell,strsize(@zshell))
-
+  'ios.ram_fill($80000,$8000,0)                                                      'Ram-Bereich indem das geladene Flashprogramm liegt löschen
 
 pri Mode_Ready
 
          repeat while ios.bus_getchar2<>88                                         'warten auf Grafiktreiber
-{pub i2c_wr_byte(addr, bf) | ackbit
 
-'' Write byte to eeprom
-
-  ackbit := ios.i2c_wr_block(addr, 1, @bf)
-
-  return ackbit
-
-pub i2c_rd_byte(addr) | bf
-
-'' Return byte value from eeprom
-
-  ios.i2c_rd_block(addr, 1, @bf)
-
-  return bf & $0000_00FF                                         ' clean-up
-}
 
 obj '************************** Datei-Unterprogramme ******************************************************************************************************************************
 con '------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -1156,6 +1140,8 @@ PRI texec | ht, nt, restart,a,b,c,d,e,f,h,elsa,fvar,tab_typ
              '136: ' CLOSE
              '   fileOpened := false
              '   close
+             136: 'CALL
+                  ios.ld_rambin(2)
 
              137: ' DEL <file>
                 Input_String
@@ -1216,7 +1202,7 @@ PRI texec | ht, nt, restart,a,b,c,d,e,f,h,elsa,fvar,tab_typ
                     errortext
                  close
 
-             147:'RLOAD
+             147:'LOAD
                   Input_String
                   'bytemove(@f0[strsize(@f0)],string(".BIN"),4)
                   'ios.print(@f0)
@@ -1308,7 +1294,16 @@ PRI texec | ht, nt, restart,a,b,c,d,e,f,h,elsa,fvar,tab_typ
                  ende
 
       else
-          errortext
+          tp--
+          Input_String
+          bytemove(@f0[strsize(@f0)],string(".BIN"),4)
+                  'ios.print(@f0)
+          'ios.print(@f0)
+          mount
+          if ios.sdopen("R",@f0)
+             errortext
+          ios.ldbin(@f0)
+          'errortext
       if spaces == ":"                                                          'existiert in der selben zeile noch ein befehl, dann von vorn
          restart := 1
          tp++
@@ -1473,7 +1468,7 @@ PRI Flash_Funktionen|function,a,b,c,t,x,y,p,anf,end,teiler
                        errortext
                     else
                        b:=ios.sdfattrib(0)                                      'Dateigrösse ermitteln, daraus ergib sich die Anzahl der Speicherzellen
-                       c:=b/4096                                                   'Anzahl 4K Blöcke
+                       c:=b/4096                                                'Anzahl 4K Blöcke
                        ios.print(string("loesche Flashbereich "))
                        ios.printhex(a,8)
                        ios.printchar(45)
@@ -1506,10 +1501,13 @@ PRI Flash_Funktionen|function,a,b,c,t,x,y,p,anf,end,teiler
 
             "L"    :'Flash_Datei starten                                          'Flash-Datei laden und starten
                     a:=expr(1)                                                    'adresseneingabe
-                    if a>0
-                       a:=a/$8000                                                 'wievielte 32kb Datei im Flash?
-                    a+=2                                                          'jede Datei hat den offset 2 d.h. Datei 0 wird mit 2 gestartet
-                    ios.ld_rambin(a)
+                    b:=ios.rd_flashlong(a+8)& $FFFF
+                    ios.print(string("lade ... #"))
+                    ios.printhex(b,4)
+                    ios.print(string(" Bytes .."))
+                    ios.flxgetblk(a,$80000,b)
+                    ios.print(string("starte.."))
+                    ios.ld_rambin(2)
 
 
             "E"    :'Flash löschen                                                'Flash-Löschen (entweder adressbereich oder alles)
@@ -1517,10 +1515,13 @@ PRI Flash_Funktionen|function,a,b,c,t,x,y,p,anf,end,teiler
                         skipspaces
                         anf:=expr(1)                                              'Anfangsadresse
                         a:=((anf+$8000)-anf)/4096                                 '32kB Bereich
+                        teiler:=1
 
                      else
                         anf:=ios.flashsize/4096                                   'gesamter Flasspeicher - Flashgrösse in 4K Blöcken
+
                         teiler:=anf/8                                             'Anzahl 32k-Blöcke
+
                         a:=anf
                      ios.print(string("Flash loeschen, fortfahren?"))
                      if ios.keywait=="j"

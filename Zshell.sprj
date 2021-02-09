@@ -3,42 +3,42 @@ Iamthemagicnumber=1
 
 [Main]
 SelectedTab=0
-TreePath=\\Mac\Home\Documents\GitHub\ZShell
-NumSubs=9
+TreePath=\\Mac\Home\Documents\GitHub\PLEXUS
+NumSubs=8
 OverrideOptimisation=0
 OptimiseFlags=0
 
 [File1]
 FileName=\\Mac\Home\Documents\GitHub\ZShell\ZShell.spin
-TopLine=4
+TopLine=278
 
 [File2]
 FileName=\\Mac\Home\Documents\GitHub\Trios-Basic\Basic3_5.spin
-TopLine=662
+TopLine=335
 
 [File3]
 FileName=\\Mac\Home\Documents\GitHub\ZShell\Lib\reg-ios-bas.spin
-TopLine=2559
+TopLine=75
 
 [File4]
 FileName=\\Mac\Home\Documents\GitHub\ZShell\ZShell_Bel.spin
-TopLine=513
+TopLine=1182
 
 [File5]
 FileName=\\Mac\Home\Documents\GitHub\ZShell\Lib\admsid.spin
 TopLine=208
 
 [File6]
-FileName=\\Mac\Home\Documents\GitHub\Trios-Basic\Lib\Winbond_Driver_neu.spin
-TopLine=105
+FileName=\\Mac\Home\Documents\GitHub\ZShell\Lib\regflash-neu.spin
+TopLine=2
 
 [File7]
-FileName=\\Mac\Home\Documents\GitHub\ZShell\Lib\regflash-neu.spin
-TopLine=123
+FileName=\\Mac\Home\Documents\GitHub\ZShell\Lib\glob-con.spin
+TopLine=319
 
 [File8]
-FileName=\\Mac\Home\Documents\GitHub\ZShell\Lib\BasFloatString2.spin
-TopLine=1
+FileName=\\Mac\Home\Documents\GitHub\Trios-Basic\Lib\reg-ios-bas.spin
+TopLine=2549
 
 [File9]
 FileName=\\Mac\Home\Documents\GitHub\ZShell\Lib\BasF32.spin

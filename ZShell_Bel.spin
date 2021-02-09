@@ -141,7 +141,7 @@ linelen      =39
 
 buttonbuff=33                                                                                            'Buttonanzahl 1-32 Textbutton oder icon
 
-Bel_Treiber_Ver=640                                                                                       'Bellatrix-Treiberversion
+Bel_Treiber_Ver=200                                                                                        'Bellatrix-Treiberversion
 
   #$FC, Light_Grey, #$A8, Grey, #$54, Dark_Grey
   #$C0, Light_Red, #$80, Red, #$40, Dark_Red
