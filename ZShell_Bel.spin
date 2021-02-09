@@ -309,7 +309,7 @@ PUB main | zeichen,n,i,x,y ,speed,bs                             'chip: kommando
 
         gc#BMGR_GETSPEC     : mgr_getspec
         gc#BMGR_LOAD        : mgr_load                                                                   'neuen bellatrix-code laden
-        'gc#BMGR_FLASHLOAD   : flash_loader
+        gc#BMGR_FLASHLOAD   : flash_load
         gc#BMGR_GETCOGS     : mgr_getcogs                                                                'freie cogs abfragen
         gc#BMGR_GETVER      : sub_putlong(Bel_Treiber_Ver)                                               'Rückgabe Grafiktreiber 64
         gc#BMGR_REBOOT      : reboot                                                                     'bellatrix neu starten
@@ -475,6 +475,19 @@ PUB mgr_getcogs: cogs |i,c,cog[8]                                               
 pub mgr_getspec
 
   sub_putlong(CHIP_SPEC)
+PUB flash_load
+    plen:=sub_getword
+    start_loader
+
+pub start_loader|i
+  repeat i from 0 to 7                                                                                   'alle anderen cogs anhalten
+    ifnot i == cogid
+      cogstop(i)
+
+  dira := 0                                                                                              'diese cog vom bus trennen
+  cognew(@loader, plen)
+
+  cogstop(cogid)                                                                                         'cog 0 anhalten
 
 PUB mgr_load|i                                          'cmgr: bellatrix-loader
 ''funktionsgruppe               : cmgr
@@ -496,6 +509,8 @@ PUB mgr_load|i                                          'cmgr: bellatrix-loader
   bus_putchar(plen >> 8)                                                                                 'hsb senden
   bus_putchar(plen & $FF)                                                                                'lsb senden
 
+  start_loader
+{
   repeat i from 0 to 7                                                                                   'alle anderen cogs anhalten
     ifnot i == cogid
       cogstop(i)
@@ -504,7 +519,7 @@ PUB mgr_load|i                                          'cmgr: bellatrix-loader
   cognew(@loader, plen)
 
   cogstop(cogid)                                                                                         'cog 0 anhalten
-
+}
 DAT
                         org     0
 

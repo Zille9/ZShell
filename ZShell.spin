@@ -232,7 +232,7 @@ DAT
    sysfont       byte "sysfontb.dat",0                                          'system-font
    ZShell        byte "╋┤├┴┬-Shell V1.2 ",0                                     'Logo+Programmname und Version
    Flist         byte "fllist.txt",0                                            'Flash-Dateiliste
-
+   regbel        byte "reg.bel",0
    FLASHROM      byte "Flash-Rom",0
    ERAM          byte "E-Ram    ",0
    HUBRAM        byte "Hub-Ram  ",0
@@ -274,8 +274,10 @@ PRI init |f1,f2,f3
   farbe:=light_orange                                                           'Schreibfarbe
   hintergr:=black                                                               'Hintergrundfarbe
   farbe3:=orange                                                                '3.Farbe
-  Mode_Ready
+  mount
+  'ios.bload_flash($D8000,1)                                                     'Flash-Variante
 
+  Mode_Ready
 
 '***************************************************************************************************************************************************************
 
@@ -331,7 +333,6 @@ PRI init |f1,f2,f3
   PORT:=$38
   ios.set_plxAdr(ADDA,PORT)
   bytemove(@Titelzeile,@zshell,strsize(@zshell))
-  'ios.ram_fill($80000,$8000,0)                                                      'Ram-Bereich indem das geladene Flashprogramm liegt löschen
 
 pri Mode_Ready
 
