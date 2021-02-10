@@ -27,10 +27,6 @@ Notizen         :
 
 
 
-OBJ
-  gc    : "m-glob-con"
-
-
 CON
 
   SCL   = 18'gc#adm_scl '20

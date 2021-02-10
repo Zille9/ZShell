@@ -171,7 +171,6 @@ OBJ
                 ser             : "RS232_ComEngine"
                 plx             : "adm-plx"
                 gc              : "glob-con"
-                num             : "glob-numbers"   'Number Engine
                 signal          : "PropellerSignalGenerator"
                 flash           : "Winbond_Driver_neu"
 
