@@ -11,7 +11,7 @@ Zum Betrieb ist die Datei Zshell_Bel in Bellatrix zu flashen.
 - Speichermonitor für Hub- , Externen Ram und Flash-Rom
 - Funktionen, um einen Flash-Rom zu beschreiben, zu löschen und von ihm Programme zu starten
 
-Hinweise zum Anschluss des Flash-Rom-Speichers sind in der Datei admid.spin zu finden!
+Hinweise zum Anschluss des Flash-Rom-Speichers sind in der Datei admsid.spin zu finden!
 Es werden Flash-Rom's bis 16MB unterstütz (W25Q16 - W25Q128)
 
 Besuche uns auf https://hive-project.de für weitere Informationen
