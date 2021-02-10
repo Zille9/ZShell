@@ -156,8 +156,8 @@ dat
 '************************** Dateioperationen **************************************************************
    tok5  byte "OPEN", 0     ' ********* Frei *********                                      133     getestet
    tok6  byte "TYPE", 0     ' TYPE <file> Dateiinhalt auf Bildschirm ausgeben               134     getestet
-   tok7  byte "WRITE", 0    ' ********* Frei *********                                      135     getestet
-   tok8  byte "CALL", 0    ' ********* Frei *********                                       136     getestet
+   tok7  byte "KEY", 0      ' Tastencode anzeigen                                           135     getestet
+   tok8  byte "CCODE", 0    ' Anzeige Colorcodes                                            136     getestet
    tok9  byte "DEL", 0      ' DELETE " <file> "                                             137     getestet
    tok10 byte "REN", 0      ' RENAME " <file> "," <file> "                                  138     getestet
    tok11 byte "CHDIR",0      ' Verzeichnis wechseln                                         139     getestet    kann nicht CD heissen, kollidiert sonst mit Hex-Zahlen-Auswertung in getanynumber
@@ -230,7 +230,7 @@ Dat '*************** Grafikparameter **************************
 DAT
    ext5          byte "*.*",0                                                   'alle Dateien anzeigen
    sysfont       byte "sysfontb.dat",0                                          'system-font
-   ZShell        byte "╋┤├┴┬-Shell V1.2 ",0                                     'Logo+Programmname und Version
+   ZShell        byte "•╋┤├┴┬1.2",0                                         'Logo+Programmname und Version
    Flist         byte "fllist.txt",0                                            'Flash-Dateiliste
    regbel        byte "reg.bel",0
    FLASHROM      byte "Flash-Rom",0
@@ -276,8 +276,7 @@ PRI init |f1,f2,f3
   farbe3:=orange                                                                '3.Farbe
   mount
   'ios.bload_flash($D8000,1)                                                     'Flash-Variante
-
-  Mode_Ready
+  'Mode_ready
 
 '***************************************************************************************************************************************************************
 
@@ -1115,34 +1114,25 @@ PRI texec | ht, nt, restart,a,b,c,d,e,f,h,elsa,fvar,tab_typ
                         b:=0
 
 
-             {135: ' WRITE ...
-                b:=0                                                             'Marker zur Zeichenketten-Unterscheidung (String, Zahl)
-                repeat
-                   nt := spaces                                                  'Zeichen lesen
-                   if nt == 0 or nt == ":"                                       'raus, wenn kein Zeichen mehr da ist oder Doppelpunkt auftaucht
-                      quit
-                   if is_string                                                  'handelt es sich um einen String?
-                      input_string                                               'String einlesen
-                      b:=1                                                       'es ist ein String
-                      stringschreiben(0,0,@font,2)                             'Strings schreiben
-                   elseif b==0                                                   'kein String, dann eine Zahl
-                      stringschreiben(0,0,zahlenformat(expr(0)),2)             'Zahlenwerte schreiben
-                   nt := spaces
-                   case nt
-                        ";": tp++                                                'Semikolon bewirkt, das keine Leerzeichen zwischen den Werten geschrieben werden
-                        ",":ios.sdputc(",")                                      'Komma schreiben
-                            tp++
-                        0,":":ios.sdputc(fReturn)                                'ende der Zeile wird mit Doppelpunkt oder kein weiteres Zeichen markiert
-                              ios.sdputc(fLinefeed)
-                              quit
-                        other:errortext'1,1)
-                        }
+             135: ' Key                                                         'Anzeige Tastencode
+                  repeat while b<>27
+                     b:=ios.keywait
+                     ios.printdec(b)
+                     ios.printchar(32)
 
-             '136: ' CLOSE
-             '   fileOpened := false
-             '   close
-             136: 'CALL
-                  ios.ld_rambin(2)
+
+             136: ' CCode
+                  b:=0
+                  repeat a from 0 to 255 step 4
+                     b++
+                     ios.printboxcolor(win,255-a,a)
+                     ios.printdec(a)
+                     ios.printchar(32)
+                     if b==8
+                        b:=0
+                        ios.printchar(13)
+                  ios.printboxcolor(win,farbe,hintergr)
+
 
              137: ' DEL <file>
                 Input_String

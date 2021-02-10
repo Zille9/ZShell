@@ -370,7 +370,7 @@ PUB init_subsysteme|i',x,y,tn,tmp                                   'chip: initi
   wind[7]:=255
   wind[8]:=0
 
-  bus_putchar(88)                                                                                        'Treiber-bereit-Rückmeldung
+  'bus_putchar(88)                                                                                        'Treiber-bereit-Rückmeldung
 
 PUB bus_putchar(zeichen)                                'chip: ein byte an regnatix senden
 ''funktionsgruppe               : chip
