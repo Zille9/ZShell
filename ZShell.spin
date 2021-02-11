@@ -42,6 +42,7 @@ Eigenschaften   : -Komandozeilen-Prozessor mit mathematischen Fähigkeiten
 08-02-2021      -Systemfont fest in Bellatrix-Treiber integriert, dadurch entfällt das Laden des Fonst nach Bellatrix beim Start
                 -Trios-Logo in Titelzeile eingebaut
                 -EEPROM-Routine eingefügt, um Farbwerte im EEPROM zu speichern und beim Start zu laden
+                -Flashroutinen angepasst
                 -3923 Longs frei
 
  --------------------------------------------------------------------------------------------------------- }}
@@ -115,7 +116,7 @@ _XINFREQ     = 5_000_000
 
    ntoks        = 55   'Anzahl der Befehle
 
-  EEPROM_START_ADRESSE = $8000                               'bei Verwendung 64kb EEPROM
+  EEPROM_START_ADRESSE = $7FFB                               'bei Verwendung 64kb EEPROM
 
 '  EEPROM_START_ADRESSE = $7FFD                               'bei Verwendung 32kb EEPROM
 
@@ -138,7 +139,7 @@ var
    byte str0[STR_MAX]                                                         'String fuer Fontfunktion in Fenstern
    byte font[STR_MAX]                                                         'Stringpuffer fuer Font-Funktion und str$-funktion
    byte f0[STR_MAX]                                                           'Hilfsstring
-   byte Titelzeile[STR_MAX]                                                   'String für die Titelzeile
+   byte Titelzeile[25]                                                        'String für die Titelzeile
    byte ADDA,PORT                                                             'Puffer der Portadressen der Sepia-Karte
    byte returnmarker
    byte Pfadtiefe                                                             'nummer des wievielten unterpfades
@@ -230,14 +231,14 @@ Dat '*************** Grafikparameter **************************
 DAT
    ext5          byte "*.*",0                                                   'alle Dateien anzeigen
    sysfont       byte "sysfontb.dat",0                                          'system-font
-   ZShell        byte "•╋┤├┴┬1.2",0                                         'Logo+Programmname und Version
+   ZShell        byte "•╋┤├┴┬1.2  ",0                                         'Logo+Programmname und Version
    Flist         byte "fllist.txt",0                                            'Flash-Dateiliste
    regbel        byte "reg.bel",0
    FLASHROM      byte "Flash-Rom",0
    ERAM          byte "E-Ram    ",0
    HUBRAM        byte "Hub-Ram  ",0
    EEPROM        byte "EEPROM   ",0
-   LEER          byte "                    ",0
+   LEER          byte "         ",0
 
    weiter        byte "<Weiter? */esc:>",0
 
@@ -276,7 +277,6 @@ PRI init |f1,f2,f3
   farbe3:=orange                                                                '3.Farbe
   mount
   'ios.bload_flash($D8000,1)                                                     'Flash-Variante
-  'Mode_ready
 
 '***************************************************************************************************************************************************************
 
@@ -332,11 +332,6 @@ PRI init |f1,f2,f3
   PORT:=$38
   ios.set_plxAdr(ADDA,PORT)
   bytemove(@Titelzeile,@zshell,strsize(@zshell))
-
-pri Mode_Ready
-
-         repeat while ios.bus_getchar2<>88                                         'warten auf Grafiktreiber
-
 
 obj '************************** Datei-Unterprogramme ******************************************************************************************************************************
 con '------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -507,9 +502,7 @@ PRI getline(laenge):e | i,f, c , x,y,t,m,a                                      
                            return
 
                        211:h_dir(dzeilen,2,@ext5)                               'F4 DIR aufrufen
-                       210:ios.print(string("I2C-SCAN"))                        'F3 I2C-Belegung
-                           ios.printchar(13)
-                           ping
+                       210:i2cscan                                              'F3 I2C-Belegung
                            return
                        209:Getcogs                                              'F2 freie Cogs
                            return
@@ -548,27 +541,32 @@ PRI getline(laenge):e | i,f, c , x,y,t,m,a                                      
                                  laenge:=i                                          'laenge ist immer die aktuelle laenge der zeile
 
 
-pri Flashliste|c,adr,a,z
-    adr:=a:=FLIST_RAM
+pri Flashliste|c,z,a
+
     ios.printnl
+    ios.printboxcolor(win,hintergr,farbe)                                            'inverse Darstellung
     ios.print(string("Flash-Dateiliste:"))
+    ios.printboxcolor(win,farbe,hintergr)                                            'Farbe wieder normal
     ios.printnl
     z:=0
+    a:=FLIST_RAM
     repeat $2000
-           repeat 16
                   c:=ios.ram_rdbyte(a++)
-                  if c==$FF
+                  if (c<>$FF)
+                     ios.printchar(c)
+                     if c=="-"
+                        ios.setpos(ios.gety,ios.getx-1)
+                        ios.printchar(32)
+                        ios.setpos(ios.gety,16)
+                        ios.printchar(c)
+                        ios.printhex(ios.ram_rdlong(a),6)
+                        a+=4
+                        ios.printnl
+                        z++
+                  else
                      next
-                  ios.printchar(c)
-                  if c=="-"
-                     ios.printchar(35)
-                     ios.printhex(ios.ram_rdlong(a),6)
-                     a+=4
-                     ios.printnl
-           if ios.ram_rdbyte(a)==$FF
-              ios.printnl
-              quit
-           z++
+
+
            if z==20
               ios.print(@weiter)
               z:=0
@@ -589,7 +587,10 @@ pri Getcogs|a,b,r,t
     r:=ios.reggetcogs
     t:=0
     ios.printchar(13)
+    ios.printboxcolor(win,hintergr,farbe)                                            'inverse Darstellung
     ios.print(string("freie COG's:"))
+    ios.printboxcolor(win,farbe,hintergr)                                            'normale Darstellung
+
     ios.printchar(13)
     ios.printchar(13)
     ios.print(String("Administra "))
@@ -620,9 +621,19 @@ pri CogShow(n)|t
          ios.printqchar(9)
     ios.printchar(32)
 
+pri i2cscan
+    ios.printboxcolor(win,hintergr,farbe)                                            'inverse Darstellung
+    ios.print(string("I2C-Belegung:"))
+    ios.printboxcolor(win,farbe,hintergr)                                            'normale Darstellung
+    ios.printnl
+    ping
+    ios.printnl
+
 pri systeminfo|f,b
     ios.printnl
+    ios.printboxcolor(win,hintergr,farbe)                                            'inverse Darstellung
     ios.print(string("System-Information !"))
+    ios.printboxcolor(win,farbe,hintergr)                                            'normale Darstellung
     ios.printnl
     ios.print(string("Bellatrix :"))
     ios.printbin(ios.belgetspec,16)
@@ -640,12 +651,11 @@ pri systeminfo|f,b
     ios.printnl
     getcogs
     ios.printnl
-    ios.print(string("I2C-Belegung"))
-    ios.printnl
-    ping
-    ios.printnl
+    i2cscan
     mount
+    ios.printboxcolor(win,hintergr,farbe)                                            'inverse Darstellung
     ios.print(string("SD-Card-Info   :"))
+    ios.printboxcolor(win,farbe,hintergr)                                            'normale Darstellung
     ios.print(ios.sdvolname)
     ios.printnl
     ios.print(string("Speicher frei  :"))
@@ -668,7 +678,9 @@ pri systeminfo|f,b
     close
     ios.printnl
     if Flash_vorhanden
+       ios.printboxcolor(win,hintergr,farbe)                                            'inverse Darstellung
        ios.print(string("Flash-Rom:"))
+       ios.printboxcolor(win,farbe,hintergr)                                            'normale Darstellung
        ios.printnl
        Flash_Get
 
@@ -1459,13 +1471,14 @@ PRI Flash_Funktionen|function,a,b,c,t,x,y,p,anf,end,teiler
                        errortext
                     else
                        b:=ios.sdfattrib(0)                                      'Dateigrösse ermitteln, daraus ergib sich die Anzahl der Speicherzellen
-                       c:=b/4096                                                'Anzahl 4K Blöcke
+                       ios.printnl
                        ios.print(string("loesche Flashbereich "))
-                       ios.printhex(a,8)
+                       ios.printhex(a,7)
                        ios.printchar(45)
-                       ios.printhex(a+b,8)
+                       ios.printhex(a+b,7)
+                       ios.printnl
                        p:=a                                                     'adresse sichern
-                       repeat c
+                       repeat 8
                               ios.erase_flash_data(a)
                               a+=4096
                               ios.printchar(point)
@@ -1505,6 +1518,7 @@ PRI Flash_Funktionen|function,a,b,c,t,x,y,p,anf,end,teiler
                      if spaces==44                                                'komma?
                         skipspaces
                         anf:=expr(1)                                              'Anfangsadresse
+                        c:=anf/$8000                                              'der wievielte Eintrag in der Liste?
                         a:=((anf+$8000)-anf)/4096                                 '32kB Bereich
                         teiler:=1
 
@@ -1525,6 +1539,7 @@ PRI Flash_Funktionen|function,a,b,c,t,x,y,p,anf,end,teiler
                         t:=0
                         p:=0
                         b:=anf
+                        ios.ram_fill(FLIST_RAM+(c*(12+4)),$10,0)                  'Name in Ram-Liste löschen
                         repeat a
                                ios.erase_flash_data(b)
                                b+=4096
@@ -1535,6 +1550,8 @@ PRI Flash_Funktionen|function,a,b,c,t,x,y,p,anf,end,teiler
                                   ios.setpos(y,x)
                                   ios.print(FS.FloatToString(fl.ffloat(fl.fmul(fl.fdiv(p,teiler),100))))
                                   ios.printchar(37)                               'Prozent
+                        Flash_List(1)                                                'Dateiliste im Flash aktualisieren
+
                      ios.printnl
 
 
@@ -1552,7 +1569,7 @@ pri Flash_name(adr)|a,i                                 'schreibt den Namen und 
     ios.ram_wrlong(adr,a)                               'Adresse schreiben
 
 Pri Flash_List(mode)|adr,a,b,i
-    a:=ios.flashsize
+    a:=ios.flashsize                                                            'ermittle Flashgroesse
     adr:=a-$8000                                                                'letzter 32kb Block im Flash ist die Datei-Liste
     b:=adr
     case mode                                                                   'im Flash aktualisieren oder in E-Ram schreiben
@@ -1574,7 +1591,7 @@ Pri Flash_List(mode)|adr,a,b,i
 
           2: ios.flxgetblk(adr,FLIST_RAM,$2000)                                 'Liste aus dem Flash in den E-Ram schreiben
 
-
+    ios.printnl
 PRI Hex(f,value,digits)
   value <<= (8 - digits) << 2
   repeat digits
