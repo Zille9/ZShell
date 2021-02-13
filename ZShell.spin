@@ -180,13 +180,13 @@ dat
    tok24 byte "RND", 0       'Zufallszahl von x                                            '152     getestet
    tok25 byte "PI",0         'Kreiszahl PI                                                 '153     getestet
    tok26 byte "CHR$",0       'CHR$                                                          154     getestet
-   tok27 byte "ABS",0        '********* Frei *********              '                       155     getestet
+   tok27 byte "PLXMAP",0        '********* Frei *********              '                       155     getestet
    tok28 byte "SIN",0                                                                     ' 156     getestet
    tok29 byte "COS",0                                                                     ' 157     getestet
    tok30 byte "TAN",0                                                                  '    158     getestet
    tok31 byte "ATN",0                                                                     ' 159     getestet
    tok32 byte "LN",0                                                                   '    160     getestet
-   tok33 byte "SGN",0        '********* Frei *********                                  '   161     getestet
+   tok33 byte "PLXTEST",0        '********* Frei *********                                  '   161     getestet
    tok34 byte "SQR",0                                                                   '   162     getestet
    tok35 byte "EXP",0                                                                  '    163     getestet
    tok36 byte "INT",0        '********* Frei *********                                    ' 164     getestet
@@ -828,11 +828,6 @@ PRI factor | tok, a,b,c,d,e,g,f,fnum                                            
           return fl.ffloat(lookup(b:ios.ram_rdbyte(a),ios.ram_rdword(a),0,ios.ram_rdlong(a)))
 
 
-      178:'JOY
-          a:=klammer(1)
-          return fl.ffloat(ios.Joy(3+a))
-
-
       182:'asc
            klammerauf
               c:=fl.ffloat(spaces) 'Zeichen
@@ -1221,6 +1216,10 @@ PRI texec | ht, nt, restart,a,b,c,d,e,f,h,elsa,fvar,tab_typ
                     errortext
                  close
 
+             155:'PLXMAP
+                  'plx_map
+             161:'PLXTEST
+                  'plx_test
              165:'Colour <vordergr>,<hintergr>,<3.Color>(opt)
                  farbe:=expr(1)&255
                  komma
@@ -1277,13 +1276,25 @@ PRI texec | ht, nt, restart,a,b,c,d,e,f,h,elsa,fvar,tab_typ
                    play:=1
                    ios.sid_sdmpplay(@f0)                                      'DMP-File abspielen
                    if spaces == "0"
-                          playerstatus'ios.sid_dmpstop
+                          playerstatus
                           play:=0
                           close
                    elseif spaces == "1"
                           ios. sid_dmppause
              177:'PORT
                  Port_Funktionen
+
+             178:'JOY
+                 a:=klammer(1)
+                 ios.set_func(0,Cursor_Set)
+                 repeat while(ios.key<>27)
+                        ios.setpos(ios.gety,ios.gety)
+                        ios.printdec(ios.joy(3+a))
+                        ios.printchar(32)
+                 ios.set_func(cursor,Cursor_Set)
+                 ios.printnl
+
+
              '179:'XBUS-Funktionen
              '     BUS_Funktionen
 
@@ -1429,7 +1440,6 @@ PRI PORT_Funktionen|function,a,b,c,x,y
                      ios.set_func(0,Cursor_Set)
                      repeat
                        ios.setpos(y,x)
-
                        ios.printbin(ios.getreg(a),8)
                        ios.printchar(32)
                        ios.printHex(ios.getreg(a),2)
@@ -1442,10 +1452,10 @@ PRI PORT_Funktionen|function,a,b,c,x,y
             other:
                    errortext
 pri ping|i,a,x,y,yt,n
-    repeat i from 0 to 128
-             ios.plxHalt
+
+    ios.plxHalt
+    repeat i from 0 to 127
              a:=ios.plxping(i)
-             ios.plxrun
 
              ifnot a
                 ios.printchar("#")
@@ -1453,8 +1463,10 @@ pri ping|i,a,x,y,yt,n
                 ios.printchar(32)
                 ios.printdec(i)
                 ios.printchar(13)
+    ios.plxrun
 
-con'********************************************* Flsh-Funktionen *********************************************************************************************
+
+con'********************************************* Flash-Funktionen *********************************************************************************************
 PRI Flash_Funktionen|function,a,b,c,t,x,y,p,anf,end,teiler
     function:=spaces&CaseBit
     skipspaces
