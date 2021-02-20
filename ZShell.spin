@@ -39,11 +39,14 @@ Eigenschaften   : -Komandozeilen-Prozessor mit mathematischen Fähigkeiten
                 -es fehlt noch die Aktualisierung der Flashliste im Ram und Rom
                 -4043 Longs frei
 
-08-02-2021      -Systemfont fest in Bellatrix-Treiber integriert, dadurch entfällt das Laden des Fonst nach Bellatrix beim Start
+08-02-2021      -Systemfont fest in Bellatrix-Treiber integriert, dadurch entfällt das Laden des Fonts nach Bellatrix beim Start
                 -Trios-Logo in Titelzeile eingebaut
                 -EEPROM-Routine eingefügt, um Farbwerte im EEPROM zu speichern und beim Start zu laden
                 -Flashroutinen angepasst
                 -3923 Longs frei
+
+19-02-2021      -Reihenfolge der Speicherauslesung beim Befehl DUMP geändert (0=Hub-Ram, 1=E-Ram, 2=EEPROM, 3=Flash-ROM
+                -3820 Longs frei
 
  --------------------------------------------------------------------------------------------------------- }}
 
